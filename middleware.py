@@ -13,7 +13,7 @@ switch_state = [0, 0, 0]
 #-----------------------------------------------------------------------------#
 # Input system                                                                #
 #-----------------------------------------------------------------------------#
-def sensorinfo():
+def sensor_info():
     try:
         filename = sensor_driver
         with open(filename,"r") as f:
@@ -25,7 +25,7 @@ def sensorinfo():
     info = [int(val[0]), int(val[2]), int(val[4]), int(val[6])]
     return info
 
-def switchstate():
+def switch_state():
     try:
         for i, filename in enumerate(switch_driver):
             with open(filename,"r") as f:
@@ -71,4 +71,3 @@ def led(led_state):
     except:
         ret = False
     return ret
-
