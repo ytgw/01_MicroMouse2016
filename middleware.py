@@ -13,7 +13,7 @@ switch_state = [0, 0, 0]
 #-----------------------------------------------------------------------------#
 # Input system                                                                #
 #-----------------------------------------------------------------------------#
-def sensor_info():
+def sensorinfo():
     try:
         filename = sensor_driver
         with open(filename,"r") as f:
@@ -25,7 +25,7 @@ def sensor_info():
     info = [int(val[0]), int(val[2]), int(val[4]), int(val[6])]
     return info
 
-def switch_state():
+def switchstate():
     try:
         for i, filename in enumerate(switch_driver):
             with open(filename,"r") as f:
