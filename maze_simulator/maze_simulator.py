@@ -1,4 +1,4 @@
-%pylab inline --no-import-all
+#%pylab inline --no-import-all
 import numpy as np
 from pylab import *
 
@@ -9,6 +9,7 @@ RIGHT  = 0b00000001
 TOP    = 0b00000010
 LEFT   = 0b00000100
 BOTTOM = 0b00001000
+DATA_PATH = "maze_simulator\data.txt"
 
 #-----------------------------------------------------------------------------#
 # Class                                                                       #
@@ -18,7 +19,7 @@ class MazeSim:
         self.N = 16
         self.simmap = np.empty( (0,self.N) )
     def open_mazefile(self):
-        with open("data.txt","r") as f:
+        with open(DATA_PATH,"r") as f:
             while 1:
                 l = f.readline()
                 if l == '':
@@ -48,9 +49,4 @@ class MazeSim:
                     axis_x = (x+0.5,x+1.5)
                     axis_y = (y+1.5,y+1.5)
                     plt.plot(axis_x,axis_y,"r-")
-            
-m = MazeSim()
-m.display_maze()
-
-#plt.grid()
-plt.show()
+        plt.show()
