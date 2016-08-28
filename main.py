@@ -1,3 +1,4 @@
+# coding: UTF-8
 import numpy as np
 import middleware as mw
 import userutility as utl
@@ -11,11 +12,14 @@ import maze_simulator.maze_simulator as ms
 # Function                                                                      #
 #-----------------------------------------------------------------------------#
 def main():
-    utl.judge_shutdown()
+    #utl.judge_shutdown()
+    print " -- start!! -- "
     maze = utl.Maze()
     sim  = ms.MazeSim()
     data = sim.open_mazefile()
-    maze.set_wallinfo( (2,3) , data[2][3] )
+    for x in range(maze.N):
+        for y in range(maze.N):
+            maze.set_wallinfo( (x,y) , int(data[x][y]) )
     maze.adachi()
     maze.display_wallinfo()
     maze.display_distinfo()

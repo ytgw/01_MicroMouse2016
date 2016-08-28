@@ -10,7 +10,7 @@ import numpy as np
 # スタート地点、ゴール地点、ゴールへの侵入経路の座標 ( x  , y )
 start = ( 0  , 0 )
 # ゴール座標は事前に分からない?
-goal  = ( (  4 , 11 ) , (  5 , 11 ) ,  (  4 , 12 ) , (  5 , 12 ) )
+# goal  = ( (  2 , 12 ) , (  3 , 12 ) ,  (  2 , 11 ) , (  3 , 11 ) )
 route = (  3 , 11 )
 # 壁情報のビット表現
 RIGHT  = 0b00000001
@@ -37,17 +37,17 @@ class Maze:
         self.minstep = 1
         # 壁情報を数字の0で初期化する
         self.wallinfo = np.array( [ [0] * self.N] * self.N )
-        self.wallinfo[ start[ POS_X ]  ][ start[ POS_Y ]  ] = 13
-        for pos in goal:
-            self.wallinfo[ pos[ POS_X ] ][ pos[ POS_Y ] ] = 255
+        #self.wallinfo[ start[ POS_X ]  ][ start[ POS_Y ]  ] = 12
+        #for pos in goal:
+        #    self.wallinfo[ pos[ POS_X ] ][ pos[ POS_Y ] ] = 255
         self.wallinfo[ route[ POS_X ] ][ route[ POS_Y ] ] = 0
         # distinfo[ y ][ x ]
         #  0 ～ 255で距離情報を表す
         # 距離情報を数字の255で初期化する
         self.distinfo = np.array( [ [255] * self.N] * self.N )
         self.distinfo[ start[ POS_X ]  ][ start[ POS_Y ]  ] = 255
-        for pos in goal:
-            self.distinfo[ pos[ POS_X ] ][ pos[ POS_Y ] ] = 255
+        #for pos in goal:
+        #    self.distinfo[ pos[ POS_X ] ][ pos[ POS_Y ] ] = 255
         self.distinfo[ route[ POS_X ] ][ route[ POS_Y ] ] = 1
     def get_wallinfo(self):
         return self.wallinfo
@@ -55,7 +55,7 @@ class Maze:
         # 地図情報を更新
         self.wallinfo[ set_pos[ POS_X ] ][ set_pos[ POS_Y ] ] |= ( 0b00001111 & int(new_wallinfo) )
         # 探索完了
-        self.wallinfo[ set_pos[ POS_X ] ][ set_pos[ POS_Y ] ] |= ( 0b00010000 ) 
+        #self.wallinfo[ set_pos[ POS_X ] ][ set_pos[ POS_Y ] ] |= ( 0b00010000 ) 
     def display_wallinfo(self):
         # 地図情報を表示する
         self.wallinfo = rev_array(self.wallinfo, self.N)
@@ -121,7 +121,7 @@ class Maze:
 # Function                                                                    #
 #-----------------------------------------------------------------------------#
 def rev_array(array,size):
-    # 配列の上下左右を反転する
+    # 配列のxy座標を反転した後に、行を逆転させる(0行目->N行目, 1行目->N-1行目)
     tempinfo = np.array( [ [0] * size] * size )
     for i in range(size):
         for j in range(size):
