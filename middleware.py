@@ -10,7 +10,7 @@ buzzer_driver  = "/dev/rtbuzzer0"
 motor_driver   = [ "/dev/rtmotor_raw_l0", "/dev/rtmotor_raw_r0"]
 led_driver     = [ "/dev/rtled0", "/dev/rtled1", "/dev/rtled2", "/dev/rtled3"] 
 # デバイスドライバから取得した値を格納する配列
-sensor_data  = [0, 0, 0, 0] # [距離センサー0の取得値,   1の値, 2の値, 3の値]  
+sensor_data  = [0, 0, 0, 0] # [距離センサー0の取得値, 1の値, 2の値, 3の値]  
 switch_state = [0, 0, 0]    # [タクトスイッチ0の取得値, 1の値, 2の値]
 
 #-----------------------------------------------------------------------------#
@@ -87,7 +87,7 @@ def motor(speed):
     # デバイスドライバが見つからなかった場合 => exceptの処理
     try:
         for i, filename in enumerate(motor_driver):
-            with open(filename,"w") as f_r_m:
+            with open(filename,"w") as f:
                 f.write(str(speed[i]))
         ret = True
     except:
