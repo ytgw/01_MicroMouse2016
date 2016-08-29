@@ -5,7 +5,7 @@ import middleware as mw
 import numpy as np
 
 #-----------------------------------------------------------------------------#
-# Declataion                                                                  #
+# Declation                                                                  #
 #-----------------------------------------------------------------------------#
 # スタート地点、ゴール地点、ゴールへの侵入経路の座標 ( x  , y )
 start = ( 0  , 0 )
@@ -17,6 +17,8 @@ RIGHT  = 0b00000001
 TOP    = 0b00000010
 LEFT   = 0b00000100
 BOTTOM = 0b00001000
+SERCH_COMPLETE = 0b00010000
+DIRECTION = [ RIGHT, TOP, LEFT, BOTTOM]
 # 配列内の要素番号の意味を分かりやすくするための宣言
 POS_X  = 0
 POS_Y  = 1
@@ -28,13 +30,14 @@ POS_Y  = 1
 class Maze:
     def __init__(self):
         # wallinfo[ y ][ x ]
-        #  0bit: 0 = 右になし, 1 = 右に壁あり
-        #  1bit: 0 = 上になし, 1 = 上に壁あり
-        #  2bit: 0 = 左になし, 1 = 左に壁あり
-        #  3bit: 0 = 下になし, 1 = 下に壁あり
+        #  0bit: 0 = 右に壁なし, 1 = 右に壁あり
+        #  1bit: 0 = 上に壁なし, 1 = 上に壁あり
+        #  2bit: 0 = 左に壁なし, 1 = 左に壁あり
+        #  3bit: 0 = 下に壁なし, 1 = 下に壁あり
         #  4bit: 0 = マスの探索未完了, 1 = マスの探索完了
         self.N = 16
         self.minstep = 1
+        self.n_dist = [ 0, 0, 0, 0]
         # 壁情報を数字の0で初期化する
         self.wallinfo = np.array( [ [0] * self.N] * self.N )
         #self.wallinfo[ start[ POS_X ]  ][ start[ POS_Y ]  ] = 12
@@ -55,12 +58,12 @@ class Maze:
         # 地図情報を更新
         self.wallinfo[ set_pos[ POS_X ] ][ set_pos[ POS_Y ] ] |= ( 0b00001111 & int(new_wallinfo) )
         # 探索完了
-        #self.wallinfo[ set_pos[ POS_X ] ][ set_pos[ POS_Y ] ] |= ( 0b00010000 ) 
+        self.wallinfo[ set_pos[ POS_X ] ][ set_pos[ POS_Y ] ] |= ( SERCH_COMPLETE ) 
     def display_wallinfo(self):
         # 地図情報を表示する
         self.wallinfo = rev_array(self.wallinfo, self.N)
         print "wallinfo = "
-        print self.wallinfo
+        print self.wallinfo  & 0b11101111
     def get_distinfo(self):
         # 地図情報を取得する
         return self.distinfo
@@ -92,7 +95,7 @@ class Maze:
                                 self.distinfo[ nghbrs[ 0 ][ POS_X ] ][ nghbrs[ 0 ][ POS_Y ] ] = 1 + self.distinfo[ cntr[ POS_X ] ][ cntr[ POS_Y ] ]
                         # 上にマスがあった場合「上に壁」情報をセットする
                         if (self.wallinfo[ cntr[ POS_X ] ][ cntr[ POS_Y ] ] & TOP ) != TOP:
-                            if self.distinfo[ nghbrs[ 1 ][ POS_X ] ][ nghbrs[ 1 ][ POS_Y ] ] > self.distinfo[ cntr[ POS_X ] ][ cntr[ POS_Y ] ]:                            
+                            if self.distinfo[ nghbrs[ 1 ][ POS_X ] ][ nghbrs[ 1 ][ POS_Y ] ] > self.distinfo[ cntr[ POS_X ] ][ cntr[ POS_Y ] ]:
                                 self.distinfo[ nghbrs[ 1 ][ POS_X ] ][ nghbrs[ 1 ][ POS_Y ] ] = 1 + self.distinfo[ cntr[ POS_X ] ][ cntr[ POS_Y ] ]
                         # 左にマスがあった場合「左に壁」情報をセットする
                         if (self.wallinfo[ cntr[ POS_X ] ][ cntr[ POS_Y ] ] & LEFT ) != LEFT:
@@ -116,6 +119,19 @@ class Maze:
             elif ( chk[ POS_X ] <  0 ) or ( chk[ POS_Y ] < 0 ):
                 neighbors[ i ] = center
         return neighbors
+    def get_nextpos(self, mypos):
+        nowwall = self.wallinfo[mypos[POS_X], mypos[POS_Y]]
+        nghbrs = self.neighbor_pos(mypos)
+        wall = self.wallinfo[nghbrs[1][POS_X]][nghbrs[1][POS_Y]]
+        for i in range(4):
+            self.n_dist[i] = self.distinfo[nghbrs[i][POS_X]][nghbrs[i][POS_Y]]
+            if ( nowwall & DIRECTION[i] ) == DIRECTION[i]:
+                self.n_dist[i] = 255
+            if ( self.wallinfo[nghbrs[i][POS_X]][nghbrs[i][POS_Y]] & SERCH_COMPLETE ) == SERCH_COMPLETE:
+                self.n_dist[i] = 255
+        # 四方マスのうち、ゴールまでの距離が同じマスがある場合「右->上->左->下」の順に優先的に選択される
+        min_index = self.n_dist.index(min(self.n_dist))
+        return nghbrs[min_index]
 
 #-----------------------------------------------------------------------------#
 # Function                                                                    #

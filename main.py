@@ -12,18 +12,22 @@ import maze_simulator.maze_simulator as ms
 # Function                                                                      #
 #-----------------------------------------------------------------------------#
 def main():
+    mypos = [ 0, 0 ]
+    POS_X, POS_Y = 0, 1
     #utl.judge_shutdown()
     print " -- start!! -- "
     maze = utl.Maze()
     sim  = ms.MazeSim()
     data = sim.open_mazefile()
-    for x in range(maze.N):
-        for y in range(maze.N):
-            maze.set_wallinfo( (x,y) , int(data[x][y]) )
-    maze.adachi()
+    for i in range(100):
+        maze.set_wallinfo(mypos, data[mypos[POS_X]][mypos[POS_Y]])
+        maze.adachi()
+        mypos = maze.get_nextpos(mypos)
     maze.display_wallinfo()
     maze.display_distinfo()
+    
     print " -- completed!! -- "
-
+    
+    
 if __name__ == '__main__':
     main()
