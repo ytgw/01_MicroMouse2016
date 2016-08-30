@@ -40,7 +40,6 @@ class Maze:
         self.n_dist = [ 0, 0, 0, 0]
         # 壁情報を数字の0で初期化する
         self.wallinfo = np.array( [ [0] * self.N] * self.N )
-        #self.wallinfo[ start[ POS_X ]  ][ start[ POS_Y ]  ] = 12
         #for pos in goal:
         #    self.wallinfo[ pos[ POS_X ] ][ pos[ POS_Y ] ] = 255
         self.wallinfo[ route[ POS_X ] ][ route[ POS_Y ] ] = 0
@@ -56,7 +55,21 @@ class Maze:
         return self.wallinfo
     def set_wallinfo(self,set_pos,new_wallinfo):
         # 地図情報を更新
-        self.wallinfo[ set_pos[ POS_X ] ][ set_pos[ POS_Y ] ] |= ( 0b00001111 & int(new_wallinfo) )
+        self.wallinfo[ set_pos[ POS_X ] ][ set_pos[ POS_Y ] ] |= ( 0b00001111 & new_wallinfo )
+        wallinfo =  self.wallinfo[ set_pos[ POS_X ] ][ set_pos[ POS_Y ] ]
+        nghbrs, chk = self.neighbor_pos(set_pos)
+        # 右にマスがあった場合、右のマスに「左に壁」情報をセットする
+        if ( ( wallinfo & RIGHT ) == RIGHT ) and (chk[0] == True):
+            self.wallinfo[ nghbrs[ 0 ][ POS_X ] ][ nghbrs[ 0 ][ POS_Y ] ] |= LEFT  
+        # 上にマスがあった場合、上のマスに「下に壁」情報をセットする
+        if ( ( wallinfo & TOP ) == TOP ) and (chk[1] == True):
+            self.wallinfo[ nghbrs[ 1 ][ POS_X ] ][ nghbrs[ 1 ][ POS_Y ] ] |= BOTTOM  
+        # 左にマスがあった場合、左のマスに「右に壁」情報をセットする
+        if ( ( wallinfo & LEFT ) == LEFT ) and (chk[2] == True):
+            self.wallinfo[ nghbrs[ 2 ][ POS_X ] ][ nghbrs[ 2 ][ POS_Y ] ] |= RIGHT  
+        # 下にマスがあった場合、下のマスに「上に壁」情報をセットする
+        if ( ( wallinfo & BOTTOM ) == BOTTOM ) and (chk[3] == True):
+            self.wallinfo[ nghbrs[ 3 ][ POS_X ] ][ nghbrs[ 3 ][ POS_Y ] ] |= TOP  
         # 探索完了
         self.wallinfo[ set_pos[ POS_X ] ][ set_pos[ POS_Y ] ] |= ( SERCH_COMPLETE ) 
     def display_wallinfo(self):
@@ -79,34 +92,26 @@ class Maze:
         # 足立法で各マスの距離情報を取得する
         step = self.minstep
         flag = True
+        self.distinfo = np.array( [ [255] * self.N] * self.N )
+        self.distinfo[ route[ POS_X ] ][ route[ POS_Y ] ] = 1
         # ゴール地点からスタート地点までの距離を求めたら処理をやめる
         while flag == True:
+            # 歩数マップの更新がある限り処理を続ける
+            flag = False
             for x in range(self.N):
                 for y in range(self.N):
                     if self.distinfo[ x ][ y ] == step:
                         cntr =( x , y )
-                        # スタート地点までの距離を求められたかどうか判定
-                        if cntr == start:
-                            flag = False
-                        nghbrs = self.neighbor_pos(cntr)
-                        # 右にマスがあった場合「右に壁」情報をセットする
-                        if (self.wallinfo[ cntr[ POS_X ] ][cntr[ POS_Y ] ] & RIGHT ) != RIGHT:
-                            if self.distinfo[ nghbrs[ 0 ][ POS_X ] ][ nghbrs[ 0 ][ POS_Y ] ] > self.distinfo[ cntr[ POS_X ] ][ cntr[ POS_Y ] ]:
-                                self.distinfo[ nghbrs[ 0 ][ POS_X ] ][ nghbrs[ 0 ][ POS_Y ] ] = 1 + self.distinfo[ cntr[ POS_X ] ][ cntr[ POS_Y ] ]
-                        # 上にマスがあった場合「上に壁」情報をセットする
-                        if (self.wallinfo[ cntr[ POS_X ] ][ cntr[ POS_Y ] ] & TOP ) != TOP:
-                            if self.distinfo[ nghbrs[ 1 ][ POS_X ] ][ nghbrs[ 1 ][ POS_Y ] ] > self.distinfo[ cntr[ POS_X ] ][ cntr[ POS_Y ] ]:
-                                self.distinfo[ nghbrs[ 1 ][ POS_X ] ][ nghbrs[ 1 ][ POS_Y ] ] = 1 + self.distinfo[ cntr[ POS_X ] ][ cntr[ POS_Y ] ]
-                        # 左にマスがあった場合「左に壁」情報をセットする
-                        if (self.wallinfo[ cntr[ POS_X ] ][ cntr[ POS_Y ] ] & LEFT ) != LEFT:
-                            if self.distinfo[ nghbrs[ 2 ][ POS_X ] ][ nghbrs[ 2 ][ POS_Y ] ] > self.distinfo[ cntr[ POS_X ] ][ cntr[ POS_Y ] ]:
-                                self.distinfo[ nghbrs[ 2 ][ POS_X ] ][ nghbrs[ 2 ][ POS_Y ] ] = 1 + self.distinfo[ cntr[ POS_X ] ][ cntr[ POS_Y ] ]
-                        # 下にマスがあった場合「下に壁」情報をセットする
-                        if (self.wallinfo[ cntr[ POS_X ] ][ cntr[ POS_Y ] ] & BOTTOM ) != BOTTOM:
-                            if self.distinfo[ nghbrs[ 3 ][ POS_X ] ][ nghbrs[ 3 ][ POS_Y ] ] > self.distinfo[ cntr[ POS_X ] ][ cntr[ POS_Y ] ]:
-                                self.distinfo[ nghbrs[ 3 ][ POS_X ] ][ nghbrs[ 3 ][ POS_Y ] ] = 1 + self.distinfo[ cntr[ POS_X ] ][ cntr[ POS_Y ] ]
+                        nghbrs = self.neighbor_pos(cntr)[0]
+                        # 上下左右マスの歩数マップを更新
+                        for dr in range(len(DIRECTION)):
+                            if (self.wallinfo[ cntr[ POS_X ] ][cntr[ POS_Y ] ] & DIRECTION[ dr ] ) != DIRECTION[ dr ]:
+                                if self.distinfo[ nghbrs[ dr ][ POS_X ] ][ nghbrs[ dr ][ POS_Y ] ] > self.distinfo[ cntr[ POS_X ] ][ cntr[ POS_Y ] ]:
+                                    self.distinfo[ nghbrs[ dr ][ POS_X ] ][ nghbrs[ dr ][ POS_Y ] ] = 1 + self.distinfo[ cntr[ POS_X ] ][ cntr[ POS_Y ] ]
+                                    flag = True
             step += 1
     def neighbor_pos(self,center):
+        chk_flag = [ True, True, True, True ]
         # 引数(center)の上下左右の座標を取得する
         n_right   = ( center[ POS_X ] + 1 , center[ POS_Y ]     )
         n_top     = ( center[ POS_X ]     , center[ POS_Y ] + 1 )
@@ -114,14 +119,13 @@ class Maze:
         n_bottom  = ( center[ POS_X ]     , center[ POS_Y ] - 1 )
         neighbors = [ n_right , n_top , n_left , n_bottom ]
         for i,chk in enumerate(neighbors):
-            if ( chk[ POS_X ] >= self.N ) or ( chk[ POS_Y ] >= self.N ):
-                neighbors[i] = center
-            elif ( chk[ POS_X ] <  0 ) or ( chk[ POS_Y ] < 0 ):
-                neighbors[ i ] = center
-        return neighbors
+            if ( chk[ POS_X ] >= self.N ) or ( chk[ POS_Y ] >= self.N ) or ( chk[ POS_X ] <  0 ) or ( chk[ POS_Y ] < 0 ):
+                neighbors[ i ] = ( -1, -1)
+                chk_flag[ i ] = False
+        return neighbors, chk_flag
     def get_nextpos(self, mypos):
         nowwall = self.wallinfo[mypos[POS_X], mypos[POS_Y]]
-        nghbrs = self.neighbor_pos(mypos)
+        nghbrs = self.neighbor_pos(mypos)[0]
         wall = self.wallinfo[nghbrs[1][POS_X]][nghbrs[1][POS_Y]]
         for i in range(4):
             self.n_dist[i] = self.distinfo[nghbrs[i][POS_X]][nghbrs[i][POS_Y]]

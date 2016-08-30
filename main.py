@@ -19,15 +19,13 @@ def main():
     maze = utl.Maze()
     sim  = ms.MazeSim()
     data = sim.open_mazefile()
-    for i in range(100):
+    for i in range(80):
         maze.set_wallinfo(mypos, data[mypos[POS_X]][mypos[POS_Y]])
         maze.adachi()
         mypos = maze.get_nextpos(mypos)
     maze.display_wallinfo()
     maze.display_distinfo()
-    
     print " -- completed!! -- "
-    
     
 if __name__ == '__main__':
     main()
