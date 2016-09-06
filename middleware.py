@@ -74,7 +74,7 @@ def buzzer(frequency):
     try:
         filename = buzzer_driver
         with open(filename,"w") as f:
-            f.write(frequency)
+            f.write(int(frequency))
         ret = True
     except:
         ret = False
@@ -88,7 +88,7 @@ def motor(speed):
     try:
         for i, filename in enumerate(motor_driver):
             with open(filename,"w") as f:
-                f.write(str(speed[i]))
+                f.write(str(int(speed[i])))
         ret = True
     except:
         ret = False
