@@ -5,11 +5,7 @@ import userutility as utl
 import maze_simulator.maze_simulator as ms
 
 #-----------------------------------------------------------------------------#
-# Declataion                                                                  #
-#-----------------------------------------------------------------------------#
-
-#-----------------------------------------------------------------------------#
-# Function                                                                      #
+# Function                                                                    #
 #-----------------------------------------------------------------------------#
 def main():
     mypos = [ 0, 0 ]
@@ -19,10 +15,11 @@ def main():
     maze = utl.Maze()
     sim  = ms.MazeSim()
     data = sim.open_mazefile()
-    for i in range(80):
+    for i in range(60):
         maze.set_wallinfo(mypos, data[mypos[POS_X]][mypos[POS_Y]])
         maze.adachi()
         mypos = maze.get_nextpos(mypos)
+    print "last mypos = " + str(mypos)
     maze.display_wallinfo()
     maze.display_distinfo()
     print " -- completed!! -- "

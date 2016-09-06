@@ -9,9 +9,8 @@ import numpy as np
 #-----------------------------------------------------------------------------#
 # スタート地点、ゴール地点、ゴールへの侵入経路の座標 ( x  , y )
 start = ( 0  , 0 )
-# ゴール座標は事前に分からない?
-# goal  = ( (  2 , 12 ) , (  3 , 12 ) ,  (  2 , 11 ) , (  3 , 11 ) )
-route = (  3 , 11 )
+goal  = ( ( 7 , 7 ) , ( 7 , 8 ) ,  ( 8 , 7 ) , ( 8 , 8 ) )
+route = (  6 , 8 )
 # 壁情報のビット表現
 RIGHT  = 0b00000001
 TOP    = 0b00000010
@@ -29,7 +28,7 @@ POS_Y  = 1
 # 迷路クラス
 class Maze:
     def __init__(self):
-        # wallinfo[ y ][ x ]
+        # wallinfo[ x ][ y ]
         #  0bit: 0 = 右に壁なし, 1 = 右に壁あり
         #  1bit: 0 = 上に壁なし, 1 = 上に壁あり
         #  2bit: 0 = 左に壁なし, 1 = 左に壁あり
@@ -43,7 +42,7 @@ class Maze:
         #for pos in goal:
         #    self.wallinfo[ pos[ POS_X ] ][ pos[ POS_Y ] ] = 255
         self.wallinfo[ route[ POS_X ] ][ route[ POS_Y ] ] = 0
-        # distinfo[ y ][ x ]
+        # distinfo[ x ][ y ]
         #  0 ～ 255で距離情報を表す
         # 距離情報を数字の255で初期化する
         self.distinfo = np.array( [ [255] * self.N] * self.N )
@@ -52,9 +51,15 @@ class Maze:
         #    self.distinfo[ pos[ POS_X ] ][ pos[ POS_Y ] ] = 255
         self.distinfo[ route[ POS_X ] ][ route[ POS_Y ] ] = 1
     def get_wallinfo(self):
+        # 現時点で判明している壁情報を取得する
+        # 返り値
+        #   wallinfo : 全座標の距離情報を格納したリスト
         return self.wallinfo
-    def set_wallinfo(self,set_pos,new_wallinfo):
-        # 地図情報を更新
+    def set_wallinfo(self, set_pos, new_wallinfo):
+        # 壁情報を更新
+        # 引数
+        #   set_pos : 壁情報を更新したい(x,y)座標。2要素を持つリスト形式かタプル形式で指定。
+        #   new_wallinfo : 更新する壁情報の値
         self.wallinfo[ set_pos[ POS_X ] ][ set_pos[ POS_Y ] ] |= ( 0b00001111 & new_wallinfo )
         wallinfo =  self.wallinfo[ set_pos[ POS_X ] ][ set_pos[ POS_Y ] ]
         nghbrs, chk = self.neighbor_pos(set_pos)
@@ -73,18 +78,23 @@ class Maze:
         # 探索完了
         self.wallinfo[ set_pos[ POS_X ] ][ set_pos[ POS_Y ] ] |= ( SERCH_COMPLETE ) 
     def display_wallinfo(self):
-        # 地図情報を表示する
+        # 地図情報をコマンドラインに表示する
         self.wallinfo = rev_array(self.wallinfo, self.N)
         print "wallinfo = "
         print self.wallinfo  & 0b11101111
     def get_distinfo(self):
-        # 地図情報を取得する
+        # 現時点で判明している距離情報を取得する
+        # 返り値
+        #  distinfo : 全座標の距離情報を格納したリスト
         return self.distinfo
-    def set_distinfo(self,set_pos,new_distinfo):
+    def set_distinfo(self, set_pos, new_distinfo):
         # 距離情報を更新する
+        # 引数
+        #   set_pos : 壁情報を更新したい(x,y)座標。2要素を持つリスト形式かタプル形式で指定。
+        #   new_distinfo : 更新する距離情報の値
         self.distinfo[ set_pos[0] ][ set_pos[ POS_Y ] ]  = new_distinfo
     def display_distinfo(self):
-        # 距離情報を表示する
+        # 距離情報をコマンドラインに表示する
         self.distinfo = rev_array(self.distinfo, self.N)
         print "distinfo = "
         print self.distinfo
@@ -110,9 +120,14 @@ class Maze:
                                     self.distinfo[ nghbrs[ dr ][ POS_X ] ][ nghbrs[ dr ][ POS_Y ] ] = 1 + self.distinfo[ cntr[ POS_X ] ][ cntr[ POS_Y ] ]
                                     flag = True
             step += 1
-    def neighbor_pos(self,center):
-        chk_flag = [ True, True, True, True ]
+    def neighbor_pos(self, center):
         # 引数(center)の上下左右の座標を取得する
+        # 引数
+        #   center : (x,y)座標。2要素を持つリスト形式かタプル形式で指定。
+        # 返り値
+        #   neighbors : center の上下左右の座標を表す(x,y)座標が4個含まれるリスト。
+        #   chk_flg : center の上下左右座標が壁の向こうを表していたらFalseを返す4要素のリスト。
+        chk_flag = [ True, True, True, True ]
         n_right   = ( center[ POS_X ] + 1 , center[ POS_Y ]     )
         n_top     = ( center[ POS_X ]     , center[ POS_Y ] + 1 )
         n_left    = ( center[ POS_X ] - 1 , center[ POS_Y ]     )
@@ -120,22 +135,40 @@ class Maze:
         neighbors = [ n_right , n_top , n_left , n_bottom ]
         for i,chk in enumerate(neighbors):
             if ( chk[ POS_X ] >= self.N ) or ( chk[ POS_Y ] >= self.N ) or ( chk[ POS_X ] <  0 ) or ( chk[ POS_Y ] < 0 ):
-                neighbors[ i ] = ( -1, -1)
+                neighbors[ i ] = center
                 chk_flag[ i ] = False
         return neighbors, chk_flag
     def get_nextpos(self, mypos):
-        nowwall = self.wallinfo[mypos[POS_X], mypos[POS_Y]]
+        # 距離情報を元に、次に進むマスを決める
+        # 探索済のマスがある方向に進まないようになっているので、1回目の走行用
+        # 引数
+        #   mypos : 現在地を表す(x,y)座標のリストもしくはタプル。
+        # 返り値
+        #   nextpos : 次に進むべきマスの(x,y)座標のリスト
+        nextpos = [ 0 , 0 ]
         nghbrs = self.neighbor_pos(mypos)[0]
-        wall = self.wallinfo[nghbrs[1][POS_X]][nghbrs[1][POS_Y]]
+        nowwall = self.wallinfo[mypos[POS_X], mypos[POS_Y]]
         for i in range(4):
-            self.n_dist[i] = self.distinfo[nghbrs[i][POS_X]][nghbrs[i][POS_Y]]
-            if ( nowwall & DIRECTION[i] ) == DIRECTION[i]:
-                self.n_dist[i] = 255
-            if ( self.wallinfo[nghbrs[i][POS_X]][nghbrs[i][POS_Y]] & SERCH_COMPLETE ) == SERCH_COMPLETE:
-                self.n_dist[i] = 255
-        # 四方マスのうち、ゴールまでの距離が同じマスがある場合「右->上->左->下」の順に優先的に選択される
-        min_index = self.n_dist.index(min(self.n_dist))
-        return nghbrs[min_index]
+            # 上下左右マスに壁がある場合はゴールに向かう
+            if mypos in goal:
+                nextpos = mypos
+                break
+            elif nghbrs[i] in goal:
+                nextpos = nghbrs[i]
+                break
+            else:
+                self.n_dist[i] = self.distinfo[nghbrs[i][POS_X]][nghbrs[i][POS_Y]]
+                if ( nowwall & DIRECTION[i] ) == DIRECTION[i]:
+                    # 壁がある場合はその方向に進まないようにする
+                    # ( min関数でindexが選ばれないようにするために255を代入 )
+                    self.n_dist[i] = 255
+                if ( self.wallinfo[nghbrs[i][POS_X]][nghbrs[i][POS_Y]] & SERCH_COMPLETE ) == SERCH_COMPLETE:
+                    # 探索済の方向に進まないようにする
+                    self.n_dist[i] = 255
+                # 四方マスのうち、ゴールまでの距離が同じマスがある場合「右->上->左->下」の順に優先的に選択される
+                min_index = self.n_dist.index(min(self.n_dist))
+                nextpos = nghbrs[min_index]
+        return nextpos
 
 #-----------------------------------------------------------------------------#
 # Function                                                                    #
