@@ -17,6 +17,15 @@ $RECYCLE.BIN/
 # Windows shortcuts
 *.lnk
 
+# Visual Studio Code
+*.vscode
+
+# Python
+*.pyc
+
+# Jupyter notebook
+*.ipynb
+
 # =========================
 # Operating System Files
 # =========================
