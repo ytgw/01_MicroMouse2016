@@ -16,7 +16,8 @@ RIGHT  = 0b00000001
 TOP    = 0b00000010
 LEFT   = 0b00000100
 BOTTOM = 0b00001000
-SERCH_COMPLETE = 0b00010000
+SERCH_COMPLETE     = 0b00010000
+SERCH_NOT_COMPLETE = 0b00000000
 DIRECTION = [ RIGHT, TOP, LEFT, BOTTOM]
 # 配列内の要素番号の意味を分かりやすくするための宣言
 POS_X  = 0
@@ -79,9 +80,10 @@ class Maze:
         self.wallinfo[ set_pos[ POS_X ] ][ set_pos[ POS_Y ] ] |= ( SERCH_COMPLETE ) 
     def display_wallinfo(self):
         # 地図情報をコマンドラインに表示する
-        self.wallinfo = rev_array(self.wallinfo, self.N)
+        tempinfo = self.wallinfo
+        tempinfo = rev_array(tempinfo, self.N)
         print "wallinfo = "
-        print self.wallinfo  & 0b11101111
+        print tempinfo  & 0b11101111
     def get_distinfo(self):
         # 現時点で判明している距離情報を取得する
         # 返り値
@@ -95,9 +97,10 @@ class Maze:
         self.distinfo[ set_pos[0] ][ set_pos[ POS_Y ] ]  = new_distinfo
     def display_distinfo(self):
         # 距離情報をコマンドラインに表示する
-        self.distinfo = rev_array(self.distinfo, self.N)
+        tempinfo = self.distinfo
+        tempinfo = rev_array(tempinfo, self.N)
         print "distinfo = "
-        print self.distinfo
+        print tempinfo
     def adachi(self):
         # 足立法で各マスの距離情報を取得する
         step = self.minstep
@@ -138,7 +141,7 @@ class Maze:
                 neighbors[ i ] = center
                 chk_flag[ i ] = False
         return neighbors, chk_flag
-    def get_nextpos(self, mypos):
+    def get_nextpos(self, mypos, mode):
         # 距離情報を元に、次に進むマスを決める
         # 探索済のマスがある方向に進まないようになっているので、1回目の走行用
         # 引数
@@ -162,8 +165,11 @@ class Maze:
                     # 壁がある場合はその方向に進まないようにする
                     # ( min関数でindexが選ばれないようにするために255を代入 )
                     self.n_dist[i] = 255
-                if ( self.wallinfo[nghbrs[i][POS_X]][nghbrs[i][POS_Y]] & SERCH_COMPLETE ) == SERCH_COMPLETE:
+                if ( mode == 2 ) and ( self.wallinfo[nghbrs[i][POS_X]][nghbrs[i][POS_Y]] & SERCH_COMPLETE ) == SERCH_COMPLETE:
                     # 探索済の方向に進まないようにする
+                    self.n_dist[i] = 255
+                if ( mode == 3 ) and ( self.wallinfo[nghbrs[i][POS_X]][nghbrs[i][POS_Y]] & SERCH_COMPLETE ) == SERCH_NOT_COMPLETE:
+                    # 未探索の方向に進まないようにする
                     self.n_dist[i] = 255
                 # 四方マスのうち、ゴールまでの距離が同じマスがある場合「右->上->左->下」の順に優先的に選択される
                 min_index = self.n_dist.index(min(self.n_dist))
