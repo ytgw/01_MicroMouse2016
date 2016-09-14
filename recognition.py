@@ -1,97 +1,129 @@
 # coding: UTF-8
 
-import time 
-import middleware as mw 
+import time
+import numpy as np
+import middleware as mw
 
-#-----------------------------------------------------------------------------# 
-# Declataion                                                                  # 
-#-----------------------------------------------------------------------------# 
+#-----------------------------------------------------------------------------#
+# Declataion                                                                  #
+#-----------------------------------------------------------------------------#
+# センサ値取得用
+FRONT_L_SENSOR_NO = 3   # 前壁検出センサ(左)
+FRONT_R_SENSOR_NO = 0   # 前壁検出センサ(右)
+LEFT_SENSOR_NO = 2      # 左壁検出センサ
+RIGHT_SENSOR_NO = 1     # 右壁検出センサ
 
+# LED点灯用
+EXEC_LED_NO = 0         # 実行中LED
+LEFT_LED_NO = 1         # 左壁検出LED
+FRONT_LED_NO = 2        # 前壁検出LED
+RIGHT_LED_NO = 3        # 右壁検出LED
+
+# フィルタ用
+GET_SENSOR_NUM = 10     # センサ値取得回数
+
+# 壁あり/なしの閾値
 FRONT_THRESHOLD = 895	# 閾値(前方)
-LEFT_THRESHOLD = 800	# 閾値(左方) 
+LEFT_THRESHOLD = 800	# 閾値(左方)
 RIGHT_THRESHOLD = 800	# 閾値(右方)
 
-#-----------------------------------------------------------------------------# 
-# Function                                                                    # 
-#-----------------------------------------------------------------------------# 
-def check_wall_front(): 
- """ 距離センサ1,2より前方に壁があるかどうかチェックする 
- """ 
- info = mw.sensorinfo()
- average = (info[0] + info[3]) / 2 
- if average > FRONT_THRESHOLD: 
-     return 1	# 壁あり 
- else: 
-     return 0	# 壁なし 
+#-----------------------------------------------------------------------------#
+# Function                                                                    #
+#-----------------------------------------------------------------------------#
+def check_wall_front():
+    """ 距離センサ前方に壁があるかどうかチェックする
+    """
+    # 初期化
+    num = 0
+    fl_buf = []
+    fr_buf = []
+    # 指定回数データ取得
+    while num < GET_SENSOR_NUM:
+        info = mw.sensorinfo()
+        fl_buf.append(info[FRONT_L_SENSOR_NO])
+        fr_buf.append(info[FRONT_R_SENSOR_NO])
+        num += 1;
+    # 平均値取得
+    average = (np.mean(fl_buf) + np.mean(fr_buf)) / 2
+    print "Front_Ave =", average
+    if average > FRONT_THRESHOLD:
+        return 1	# 壁あり
+    else:
+        return 0	# 壁なし
 
-def check_wall_left(): 
- """ 距離センサ0より左方に壁があるかどうかチェックする 
- """ 
- info = mw.sensorinfo() 
- if info[2] > LEFT_THRESHOLD: 
-     return 1	# 壁あり
- else: 
-     return 0	# 壁なし 
+def check_wall_left():
+    """ 距離センサ左方に壁があるかどうかチェックする
+    """
+    # 初期化
+    num = 0
+    l_buf = []
+    # 指定回数データ取得
+    while num < GET_SENSOR_NUM:
+        info = mw.sensorinfo()
+        l_buf.append(info[LEFT_SENSOR_NO])
+        num += 1;
+    # 平均値取得
+    average = np.mean(l_buf)
+    print "Left_Ave =", average
+    if average > LEFT_THRESHOLD:
+        return 1	# 壁あり
+    else:
+        return 0	# 壁なし
 
-def check_wall_right(): 
- """ 距離センサ3より右方に壁があるかどうかチェックする 
- """ 
- info = mw.sensorinfo() 
- if info[1] > RIGHT_THRESHOLD: 
-     return 1	# 壁あり
- else: 
-     return 0	# 壁なし
+def check_wall_right():
+    """ 距離センサより右方に壁があるかどうかチェックする
+    """
+    # 初期化
+    num = 0
+    r_buf = []
+    # 指定回数データ取得
+    while num < GET_SENSOR_NUM:
+        info = mw.sensorinfo()
+        r_buf.append(info[RIGHT_SENSOR_NO])
+        num += 1;
+    # 平均値取得
+    average = np.mean(r_buf)
+    print "Right_Ave =", average
+    if average > RIGHT_THRESHOLD:
+        return 1	# 壁あり
+    else:
+        return 0	# 壁なし
 
-#-----------------------------------------------------------------------------# 
-# Test                                                                        # 
-#-----------------------------------------------------------------------------# 
-def test_recognition(): 
- """ 壁あり/なしチェックを実施しLEDを点灯する  
- """	 
- # LED初期化
- led_state = [0,0,0,0] 
- info_min = [10000,10000,10000,10000]
- info_max = [0,0,0,0]
+#-----------------------------------------------------------------------------#
+# Test                                                                        #
+#-----------------------------------------------------------------------------#
+def test_recognition():
+    """ 壁あり/なしチェックを実施しLEDを点灯する 
+    """	
+    # 初期化
+    led_state = [0,0,0,0]
+    num = 0
+    while True:
+        num += 1;
+        print "----------"
+        print "LOOP =",num
+        print "----------"
+	# LED点灯
+        led_state[EXEC_LED_NO] = 1
+	# 前壁チェック(壁あり:LED点灯)
+        if check_wall_front() == 1:
+            led_state[FRONT_LED_NO] = 1
+        else:
+            led_state[FRONT_LED_NO] = 0
+	# 左壁チェック(壁あり:LED点灯)
+        if check_wall_left() == 1:
+            led_state[LEFT_LED_NO] = 1
+        else:
+            led_state[LEFT_LED_NO] = 0
+        # 右壁チェック(壁あり:LED点灯)
+        if check_wall_right() == 1:
+            led_state[RIGHT_LED_NO] = 1
+        else:
+            led_state[RIGHT_LED_NO] = 0
+        # LED設定
+        mw.led(led_state)
+        time.sleep(1)
 
- while True: 
-     # LED_0点灯
-     led_state[0] = 1 
-     # 前方壁チェック(壁あり:LED_1点灯)
-     if check_wall_front() == 1: 
-         led_state[2] = 1 
-     else: 
-         led_state[2] = 0 
-     # 左方壁チェック(壁あり:LED_2点灯)
-     if check_wall_left() == 1: 
-         led_state[3] = 1 
-     else: 
-         led_state[3] = 0 
-     # 右方壁チェック(壁あり:LED_3点灯)
-     if check_wall_right() == 1: 
-         led_state[1] = 1 
-     else: 
-         led_state[1] = 0 
-     # LED設定 
-     mw.led(led_state) 
-
-     info = mw.sensorinfo()
-     if info[3] > info_max[3]:
-         info_max[3] = info[3]
-
-     if info[3] < info_min[3]:
-         info_min[3] = info[3]
-     
-     if info[0] > info_max[0]:
-         info_max[0] = info[0]
-
-     if info[0] < info_min[0]:
-         info_min[0] = info[0]
-
-     print info[3],info[2],info[1],info[0] 
-     print info_min[3],info_max[3]    
-     print info_min[0],info_max[0]    
-
-     time.sleep(0.2) 
-
-if __name__ == '__main__': 
- test_recognition() 
+if __name__ == '__main__':
+    test_recognition()
+    
