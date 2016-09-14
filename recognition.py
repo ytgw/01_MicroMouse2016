@@ -1,76 +1,97 @@
-import time
-import middleware as mw
+# coding: UTF-8
 
-#-----------------------------------------------------------------------------#
-# Declataion                                                                  #
-#-----------------------------------------------------------------------------#
+import time 
+import middleware as mw 
 
-FRONT_THRESHOLD = 100	# è‡’l(‘O•û)
-LEFT_THRESHOLD = 100	# è‡’l(¶•û)
-RIGHT_THRESHOLD = 100	# è‡’l(‰E•û)
+#-----------------------------------------------------------------------------# 
+# Declataion                                                                  # 
+#-----------------------------------------------------------------------------# 
 
-#-----------------------------------------------------------------------------#
-# Function                                                                    #
-#-----------------------------------------------------------------------------#
-def check_wall_front():
-    """ ‹——£ƒZƒ“ƒT1,2‚æ‚è‘O•û‚É•Ç‚ª‚ ‚é‚©‚Ç‚¤‚©ƒ`ƒFƒbƒN‚·‚é
-    """
-    info = mw.sensorinfo()
-    print info[0],info[1],info[2],info[3]
-    average = (info[1] + info[2]) / 2
-    if average > FRONT_THRESHOLD:
-        return 1	# •Ç‚ ‚è
-    else:
-        return 0	# •Ç‚È‚µ
+FRONT_THRESHOLD = 895	# é–¾å€¤(å‰æ–¹)
+LEFT_THRESHOLD = 800	# é–¾å€¤(å·¦æ–¹) 
+RIGHT_THRESHOLD = 800	# é–¾å€¤(å³æ–¹)
 
-def check_wall_left():
-    """ ‹——£ƒZƒ“ƒT0‚æ‚è¶•û‚É•Ç‚ª‚ ‚é‚©‚Ç‚¤‚©ƒ`ƒFƒbƒN‚·‚é
-    """
-    info = mw.sensorinfo()
-    if info[0] > LEFT_THRESHOLD:
-        return 1	# •Ç‚ ‚è
-    else:
-        return 0	# •Ç‚È‚µ
+#-----------------------------------------------------------------------------# 
+# Function                                                                    # 
+#-----------------------------------------------------------------------------# 
+def check_wall_front(): 
+ """ è·é›¢ã‚»ãƒ³ã‚µ1,2ã‚ˆã‚Šå‰æ–¹ã«å£ãŒã‚ã‚‹ã‹ã©ã†ã‹ãƒã‚§ãƒƒã‚¯ã™ã‚‹ 
+ """ 
+ info = mw.sensorinfo()
+ average = (info[0] + info[3]) / 2 
+ if average > FRONT_THRESHOLD: 
+     return 1	# å£ã‚ã‚Š 
+ else: 
+     return 0	# å£ãªã— 
 
-def check_wall_right():
-    """ ‹——£ƒZƒ“ƒT3‚æ‚è‰E•û‚É•Ç‚ª‚ ‚é‚©‚Ç‚¤‚©ƒ`ƒFƒbƒN‚·‚é
-    """
-    info = mw.sensorinfo()
-    if info[3] > RIGHT_THRESHOLD:
-        return 1	# •Ç‚ ‚è
-    else:
-        return 0	# •Ç‚È‚µ
+def check_wall_left(): 
+ """ Â‹Â—Â—è·é›¢ã‚»ãƒ³ã‚µ0ã‚ˆã‚Šå·¦æ–¹ã«å£ãŒã‚ã‚‹ã‹ã©ã†ã‹ãƒã‚§ãƒƒã‚¯ã™ã‚‹ 
+ """ 
+ info = mw.sensorinfo() 
+ if info[2] > LEFT_THRESHOLD: 
+     return 1	# å£ã‚ã‚Š
+ else: 
+     return 0	# å£ãªã— 
 
-#-----------------------------------------------------------------------------#
-# Test                                                                        #
-#-----------------------------------------------------------------------------#
-def test_recognition():
-    """ •Ç‚ ‚è/‚È‚µƒ`ƒFƒbƒN‚ðŽÀŽ{‚µLED‚ð“_“”‚·‚é 
-    """	
-    # LED‰Šú‰»
-    led_state = [0,0,0,0]
-    while True:
-	# LED_0“_“”
-        led_state[0] = 1
-	# ‘O•û•Çƒ`ƒFƒbƒN(•Ç‚ ‚è:LED_1“_“”)
-        if check_wall_front() == 1:
-            led_state[1] = 1
-        else:
-            led_state[1] = 0
-	# ¶•û•Çƒ`ƒFƒbƒN(•Ç‚ ‚è:LED_2“_“”)
-        if check_wall_left() == 1:
-            led_state[2] = 1
-        else:
-            led_state[2] = 0
-        # ‰E•û•Çƒ`ƒFƒbƒN(•Ç‚ ‚è:LED_3“_“”)
-        if check_wall_right() == 1:
-            led_state[3] = 1
-        else:
-            led_state[3] = 0
-        # LEDÝ’è
-        mw.led(led_state)
-        time.sleep(1)
+def check_wall_right(): 
+ """ è·é›¢ã‚»ãƒ³ã‚µ3ã‚ˆã‚Šå³æ–¹ã«å£ãŒã‚ã‚‹ã‹ã©ã†ã‹ãƒã‚§ãƒƒã‚¯ã™ã‚‹ 
+ """ 
+ info = mw.sensorinfo() 
+ if info[1] > RIGHT_THRESHOLD: 
+     return 1	# å£ã‚ã‚Š
+ else: 
+     return 0	# å£ãªã—
 
-if __name__ == '__main__':
-    test_recognition()
-    
+#-----------------------------------------------------------------------------# 
+# Test                                                                        # 
+#-----------------------------------------------------------------------------# 
+def test_recognition(): 
+ """ Â•å£ã‚ã‚Š/ãªã—ãƒã‚§ãƒƒã‚¯ã‚’å®Ÿæ–½ã—LEDã‚’ç‚¹ç¯ã™ã‚‹  
+ """	 
+ # LEDåˆæœŸåŒ–
+ led_state = [0,0,0,0] 
+ info_min = [10000,10000,10000,10000]
+ info_max = [0,0,0,0]
+
+ while True: 
+     # LED_0Â“ç‚¹ç¯
+     led_state[0] = 1 
+     # å‰æ–¹å£ãƒã‚§ãƒƒã‚¯(å£ã‚ã‚Š:LED_1ç‚¹ç¯)
+     if check_wall_front() == 1: 
+         led_state[2] = 1 
+     else: 
+         led_state[2] = 0 
+     # å·¦æ–¹å£ãƒã‚§ãƒƒã‚¯(å£ã‚ã‚Š:LED_2ç‚¹ç¯)
+     if check_wall_left() == 1: 
+         led_state[3] = 1 
+     else: 
+         led_state[3] = 0 
+     # Â‰å³æ–¹å£ãƒã‚§ãƒƒã‚¯(å£ã‚ã‚Š:LED_3ç‚¹ç¯)
+     if check_wall_right() == 1: 
+         led_state[1] = 1 
+     else: 
+         led_state[1] = 0 
+     # LEDè¨­å®š 
+     mw.led(led_state) 
+
+     info = mw.sensorinfo()
+     if info[3] > info_max[3]:
+         info_max[3] = info[3]
+
+     if info[3] < info_min[3]:
+         info_min[3] = info[3]
+     
+     if info[0] > info_max[0]:
+         info_max[0] = info[0]
+
+     if info[0] < info_min[0]:
+         info_min[0] = info[0]
+
+     print info[3],info[2],info[1],info[0] 
+     print info_min[3],info_max[3]    
+     print info_min[0],info_max[0]    
+
+     time.sleep(0.2) 
+
+if __name__ == '__main__': 
+ test_recognition() 
