@@ -15,17 +15,17 @@ RIGHT_SENSOR_NO = 1     # 右壁検出センサ
 
 # LED点灯用
 EXEC_LED_NO = 0         # 実行中LED
-LEFT_LED_NO = 1         # 左壁検出LED
+LEFT_LED_NO = 3         # 左壁検出LED
 FRONT_LED_NO = 2        # 前壁検出LED
-RIGHT_LED_NO = 3        # 右壁検出LED
+RIGHT_LED_NO = 1        # 右壁検出LED
 
 # フィルタ用
 GET_SENSOR_NUM = 10     # センサ値取得回数
 
 # 壁あり/なしの閾値
-FRONT_THRESHOLD = 895	# 閾値(前方)
-LEFT_THRESHOLD = 800	# 閾値(左方)
-RIGHT_THRESHOLD = 800	# 閾値(右方)
+FRONT_THRESHOLD = 400	# 閾値(前方)
+LEFT_THRESHOLD = 204	# 閾値(左方)
+RIGHT_THRESHOLD = 346	# 閾値(右方)
 
 #-----------------------------------------------------------------------------#
 # Function                                                                    #
