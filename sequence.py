@@ -21,49 +21,56 @@ import recognition as rec
 # Declation                                                                  #
 #-----------------------------------------------------------------------------#
 #タクトスイッチの状態格納変数
-swstate = (-1,-1,-1)
+swstate = [2,2,2]
 #タクトスイッチ押した判定用のカウンタ
-swstatecnt = (0,0,0)
+swstatecnt = [0,0,0]
 
 #走行モードステータス択(0=探索,1=最短)
 runnninngmode = 0
-#状態ステータス(0：停止、1:開始、2:走行中)
-runstatus = 0
+
 #-----------------------------------------------------------------------------#
 # Functions                                                                  #
 #-----------------------------------------------------------------------------#
 
 def selectmode():
-    mode = (0,0,0)
+    mode = [0,0,0]
     # タクトスイッチのスイッチ取得
     swstate = mw.switchstate()
     # 走行モード
     for swno in [0, 1, 2]:
-        if swstate[swno] == 0:
+        if swstate[swno] == -1:
             swstatecnt[swno] += 1
         elif swstate[swno] == 1:
-            if swstatecnt[swno] >= 100:
+            if swstatecnt[swno] >= 20:
                 mode[swno] = 1
             swstatecnt[swno] = 0
+    print swstate
+    print swstatecnt
     return mode
 
 def main():
     while(1):
-        mode = selectmode
+        #状態ステータス(0：停止、1:開始、2:走行中)
+        runstatus = 0
+        mw.led([1,1,1,1])
+        mode = [0,0,0]
+        mode = selectmode()
+        print mode[0]
         # タクトスイッチ0が押されたら
-        if mode[0]:
+        if mode[0] == 1:
             # LED0を点灯
+            mw.led([1,1,1,0])
             # 走行モードを探索に設定
             runnninngmode = 0
 
         # タクトスイッチ1が押されたら
-        if mode[1]:
+        if mode[1] == 1:
             # LED1を点灯
             # 走行モードを最短に設定
             runnninngmode = 1
 
         # タクトスイッチ2が押されたら
-        if mode[2]:
+        if mode[2] == 1:
             # LED2を点灯
             # 状態ステータスを開始に設定
             runstatus = 1
@@ -94,8 +101,8 @@ def main():
                     runstatus = 2
 ##            elif runnninngmode == 1:
                 # 最短経路探索で移動先を選択
-        print "End"
-        break
+            print "End"
+            break
 
 if __name__ == '__main__':
     main()
