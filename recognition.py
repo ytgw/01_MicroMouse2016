@@ -8,45 +8,50 @@ import middleware as mw
 # Declataion                                                                  #
 #-----------------------------------------------------------------------------#
 # 壁あり/なしの閾値
-FRONT_THRESHOLD = 400	    # 閾値(前方)
-LEFT_THRESHOLD = 204	    # 閾値(左方)
-RIGHT_THRESHOLD = 346	    # 閾値(右方)
+FRONT_THRESHOLD = 400	            # 閾値(前方)
+LEFT_THRESHOLD  = 204	            # 閾値(左方)
+RIGHT_THRESHOLD = 346	            # 閾値(右方)
 
 # 壁接近の閾値
-FRONT_NEAR_THRESHOLD = 800  # 閾値(前方)
-LEFT_NEAR_THRESHOLD = 408   # 閾値(左方)
-RIGHT_NEAR_THRESHOLD = 692  # 閾値(右方)
+FRONT_NEAR_THRESHOLD    = 800       # 閾値(前方)
+LEFT_NEAR_THRESHOLD     = 408       # 閾値(左方)
+RIGHT_NEAR_THRESHOLD    = 692       # 閾値(右方)
+LF_NO_CHECK_NEAR_THRESHOLD =600     # 閾値(左右判定不可領域)
 
 # 判定結果
-WALL_OFF = 0                # 壁あり
-WALL_ON = 1                 # 壁なし
+WALL_OFF = 0                        # 壁あり
+WALL_ON  = 1                        # 壁なし
 
-WALL_NO_NEAR = 0            # 壁接近なし
-WALL_LEFT_NEAR = 1          # 左壁接近
-WALL_RIGHT_NEAR = 2         # 右壁接近
+WALL_NO_NEAR    = 0                 # 壁接近なし
+WALL_LEFT_NEAR  = 1                 # 左壁接近
+WALL_RIGHT_NEAR = 2                 # 右壁接近
 
+# 壁ありなし情報取得用
+RIGHT_BIT   = 0b00000001            # 右壁情報(1bit目)
+TOP_BIT     = 0b00000010            # 前壁情報(2bit目)
+LEFT_BIT    = 0b00000100            # 左壁情報(3bit目)
 
 # 距離情報取得用
-FRONT_DIRECTION = 0         # 前方
-LEFT_DIRECTION = 1          # 左方
-RIGHT_DIRECTION = 2         # 右方
+FRONT_DIRECTION     = 0             # 前方
+LEFT_DIRECTION      = 1             # 左方
+RIGHT_DIRECTION     = 2             # 右方
 
 # センサ値取得用
-FRONT_L_SENSOR_NO = 3       # 前壁検出センサ(左)
-FRONT_R_SENSOR_NO = 0       # 前壁検出センサ(右)
-LEFT_SENSOR_NO = 2          # 左壁検出センサ
-RIGHT_SENSOR_NO = 1         # 右壁検出センサ
+FRONT_L_SENSOR_NO   = 3             # 前壁検出センサ(左)
+FRONT_R_SENSOR_NO   = 0             # 前壁検出センサ(右)
+LEFT_SENSOR_NO      = 2             # 左壁検出センサ
+RIGHT_SENSOR_NO     = 1             # 右壁検出センサ
 
 # LED点灯用
-LED_OFF = 0                 # LED消灯
-LED_ON = 1                  # LED点灯
-EXEC_LED_NO = 0             # 実行中LED
-LEFT_LED_NO = 3             # 左壁検出LED
-FRONT_LED_NO = 2            # 前壁検出LED
-RIGHT_LED_NO = 1            # 右壁検出LED
+LED_OFF         = 0                 # LED消灯
+LED_ON          = 1                 # LED点灯
+EXEC_LED_NO     = 0                 # 実行中LED
+LEFT_LED_NO     = 3                 # 左壁検出LED
+FRONT_LED_NO    = 2                 # 前壁検出LED
+RIGHT_LED_NO    = 1                 # 右壁検出LED
 
 # フィルタ用
-GET_SENSOR_NUM = 10         # センサ値取得回数
+GET_SENSOR_NUM  = 10                # センサ値取得回数
 
 #-----------------------------------------------------------------------------#
 # Function                                                                    #
@@ -92,6 +97,23 @@ def check_wall_right():
         return WALL_ON	# 壁あり
     else:
         return WALL_OFF	# 壁なし
+
+def check_wall():
+    """ 壁があるかどうかチェックする
+    """
+    # 初期化
+    value = [0, 0, 0]
+    wall = 0
+    # センサ値取得
+    value = get_sensor_value()
+    # 壁ありなし判定
+    if value[FRONT_DIRECTION] > FRONT_THRESHOLD:
+        wall |= TOP_BIT
+    if value[RIGHT_DIRECTION] > FRONT_THRESHOLD:
+        wall |= RIGHT_BIT
+    if value[LEFT_DIRECTION] > LEFTT_THRESHOLD:
+        wall |= LEFT_BIT
+    return wall         
 
 def check_wall_near():
     """ 左右壁の接近チェックする
