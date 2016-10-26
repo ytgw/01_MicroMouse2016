@@ -3,24 +3,33 @@
 #-----------------------------------------------------------------------------#
 # Declation                                                                  #
 #-----------------------------------------------------------------------------#
+
 # 各デバイスドライバのパス
 sensor_driver  = "/dev/rtlightsensor0"
-switch_driver  = [ "/dev/rtswitch0", "/dev/rtswitch1"]
+switch_driver  = [ "/dev/rtswitch0", "/dev/rtswitch1", "/dev/rtswitch2"]
 buzzer_driver  = "/dev/rtbuzzer0"
 motor_driver   = [ "/dev/rtmotor_raw_l0", "/dev/rtmotor_raw_r0"]
 led_driver     = [ "/dev/rtled0", "/dev/rtled1", "/dev/rtled2", "/dev/rtled3"] 
-# デバイスドライバから取得した値を格納する配列
+# デバイスドライバから取得した値を格納するリスト
 sensor_info  = [ 0, 0, 0, 0 ] # [ 距離センサー0の取得値, 1の値, 2の値, 3の値 ]  
 switch_state = [ 0, 0, 0 ]    # [ タクトスイッチ0の取得値, 1の値, 2の値 ]
 
 #-----------------------------------------------------------------------------#
 # Input system (入力系)                                                       #
 #-----------------------------------------------------------------------------#
+
 def sensorinfo():
-    # 距離センサの値を取得する
-    # デバイスドライバに正常にアクセスできた場合 => tryの処理
-    # デバイスドライバにアクセスできなかった場合 => exceptの処理
-    # （正確には、tryの処理中にエラーが発生した場合にexceptの処理が実行される）
+    '''
+    概要：
+    　距離センサの値を取得する
+    　デバイスドライバに正常にアクセスできた場合 => tryの処理
+    　デバイスドライバにアクセスできなかった場合 => exceptの処理
+    　（正確には、tryの処理中にエラーが発生した場合にexceptの処理が実行される）
+    入力：
+    　なし
+    出力：
+    　距離センサー0～3の値を格納したリスト
+    '''
     try:
         filename = sensor_driver
         with open( filename, "r" ) as f:
@@ -38,10 +47,18 @@ def sensorinfo():
     return sensor_info
 
 def switchstate():
-    # タクトスイッチの値を取得する
-    # デバイスドライバに正常にアクセスできた場合 => tryの処理
-    # デバイスドライバにアクセスできなかった場合 => exceptの処理
-    # （正確には、tryの処理中にエラーが発生した場合にexceptの処理が実行される）
+    '''
+    概要：
+    　タクトスイッチの値を取得する
+    　デバイスドライバに正常にアクセスできた場合 => tryの処理
+    　デバイスドライバにアクセスできなかった場合 => exceptの処理
+    　（正確には、tryの処理中にエラーが発生した場合にexceptの処理が実行される）
+    入力：
+　　　なし
+    出力：
+　　　タクトスイッチ0～2の値を格納したリスト
+    '''
+    state = [ 0, 0, 0 ]
     try:
         for i, filename in enumerate( switch_driver ):
             with open( filename, "r" ) as f:
@@ -57,14 +74,22 @@ def switchstate():
     return switch_state
 
 #-----------------------------------------------------------------------------#
-# Output system (出力系)                                                      #
+# Output system (出力系)                                                       #
 #-----------------------------------------------------------------------------#
+
 def buzzer( frequency ):
-    # ブザーを鳴らす
-    # 引数は鳴らす音の周波数(Hz)
-    # デバイスドライバに正常にアクセスできた場合 => tryの処理
-    # デバイスドライバにアクセスできなかった場合 => exceptの処理
-    # （正確には、tryの処理中にエラーが発生した場合にexceptの処理が実行される）
+    '''
+    概要：
+    　ブザーを鳴らす
+    　デバイスドライバに正常にアクセスできた場合 => tryの処理
+    　デバイスドライバにアクセスできなかった場合 => exceptの処理
+    　（正確には、tryの処理中にエラーが発生した場合にexceptの処理が実行される）
+    入力：
+    　ブザー音の周波数(Hz)
+    出力：
+    　正常にブザー音がなった 　=> 返値 True
+    　ブザー音がならせなかった => 返値 False
+    '''
     try:
         filename = buzzer_driver
         with open( filename, "w" ) as f:
@@ -76,11 +101,18 @@ def buzzer( frequency ):
     return ret
 
 def motor( speed ):
-    # モーターを駆動する
-    # 引数は配列データ( speed = [ 左モータの回転数(Hz), 右モータの回転数(Hz) ] )
-    # デバイスドライバに正常にアクセスできた場合 => tryの処理
-    # デバイスドライバにアクセスできなかった場合 => exceptの処理
-    # （正確には、tryの処理中にエラーが発生した場合にexceptの処理が実行される）
+    '''
+    概要：
+    　モーターを駆動する
+    　デバイスドライバに正常にアクセスできた場合 => tryの処理
+    　デバイスドライバにアクセスできなかった場合 => exceptの処理
+    　（正確には、tryの処理中にエラーが発生した場合にexceptの処理が実行される）
+    入力：
+    　speed = [ 左モータの回転数(Hz), 右モータの回転数(Hz) ]
+    出力：
+    　正常にモーターを駆動できた => 返値 True
+    　モーターを駆動できなかった => 返値 False
+    '''
     try:
         for i, filename in enumerate( motor_driver ):
             with open( filename, "w" ) as f:
@@ -92,12 +124,19 @@ def motor( speed ):
     return ret
 
 def led( led_state ):
-    # LEDを駆動する
-    # 引数は配列データ( led_state = [ led_0, led_1, led_2,led_3 ] )
-    # "led_X = 0" => Off , "led_X = 1" => ON
-    # デバイスドライバに正常にアクセスできた場合 => tryの処理
-    # デバイスドライバにアクセスできなかった場合 => exceptの処理
-    # （正確には、tryの処理中にエラーが発生した場合にexceptの処理が実行される）
+    '''
+    概要：
+    　LEDを駆動する
+    　デバイスドライバに正常にアクセスできた場合 => tryの処理
+    　デバイスドライバにアクセスできなかった場合 => exceptの処理
+    　（正確には、tryの処理中にエラーが発生した場合にexceptの処理が実行される）
+    入力：
+    　led_state = [ led_0, led_1, led_2,led_3 ]
+    　( "led_X = 0" => Off , "led_X = 1" => ON )
+    出力：
+    　正常にLEDを駆動できた => 返値 True
+    　LEDを駆動できなかった => 返値 False
+    '''
     try:
         for i,filename in enumerate( led_driver ):
             with open( filename, 'w' ) as f: 
