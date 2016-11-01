@@ -16,8 +16,8 @@ import middleware as mw
 GLOBAL_BLOCK_LENGTH = 18e-2     # [m] 一区画の長さ
 GLOBAL_WHELL_WIDTH = 9.5e-2     # [m] 2つのタイヤの距離(調査済み)
 GLOBAL_TIRE_DIAMETER = 4.7e-2   # [m] タイヤの半径(調査済み)
-GLOBAL_ACCEL = 6e-2             # [m/s^2] 加減速の大きさ
-GLOBAL_MAX_SPEED = 20e-2        # [m/s] 最高速度
+GLOBAL_ACCEL = 10e-2            # [m/s^2] 加減速の大きさ
+GLOBAL_MAX_SPEED = 30e-2        # [m/s] 最高速度
 GLOBAL_ZERO_SPEED = 0.2e-2      # [m/s] ゼロ速度
 GLOBAL_ZERO_DISTANCE = 0.05e-2  # [m] ゼロ距離
 
@@ -225,7 +225,7 @@ def correct_F(speed,length_F):
     # 参考:http://mmk.rulez.jp/?page_id=392
     REFERENCE_F = 2e-2  # [m] 前センサの参照値
     THRESHOLD_F = 5e-2  # [m] 前センサの閾値
-    KpF = 10**(-2)      # 比例制御の定数
+    KpF = 1.5           # 比例制御の定数
     
     if length_F < THRESHOLD_F:
         # 壁が近い時
@@ -248,7 +248,7 @@ def correct_LR(length_L,length_R,diff_L,diff_R):
     REFERENCE_R = 2e-2          # [m] 右センサの参照値
     THRESHOLD_R = 5e-2          # [m] 右センサの閾値
     THRESHOLD_DIFF_R = 5e-2     # [m/m] 右センサの直進距離変化に対する左右距離変化量の閾値
-    KpLR = 10**(-2)             # 比例制御の定数
+    KpLR = 1.5                  # 比例制御の定数
     
     l_error = length_L-REFERENCE_L
     r_error = length_R-REFERENCE_R
