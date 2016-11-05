@@ -1,8 +1,9 @@
 # coding: UTF-8
 import os
 import time
-import middleware as mw
 import numpy as np
+import middleware as mw
+import move as mv
 
 #-----------------------------------------------------------------------------#
 # Declation                                                                  #
@@ -33,28 +34,27 @@ POS_Y  = 1
 # 迷路クラス
 class Maze:
     def __init__( self ):
-        # wallinfo[ x ][ y ]
-        #  0bit: 0 = 右に壁なし, 1 = 右に壁あり
-        #  1bit: 0 = 上に壁なし, 1 = 上に壁あり
-        #  2bit: 0 = 左に壁なし, 1 = 左に壁あり
-        #  3bit: 0 = 下に壁なし, 1 = 下に壁あり
-        #  4bit: 0 = マスの探索未完了, 1 = マスの探索完了
         self.N = 16
         self.minstep = 1
         self.n_dist = [ 0, 0, 0, 0 ]
+        # wallinfo[ x ][ y ]
+        #   0bit: 0 = 右に壁なし, 1 = 右に壁あり
+        #   1bit: 0 = 上に壁なし, 1 = 上に壁あり
+        #   2bit: 0 = 左に壁なし, 1 = 左に壁あり
+        #   3bit: 0 = 下に壁なし, 1 = 下に壁あり
+        #   4bit: 0 = マスの探索未完了, 1 = マスの探索完了
         # 壁情報を数字の0で初期化する
         self.wallinfo = np.array( [ [ 0 ] * self.N ] * self.N )
-        #for pos in goal:
-        #    self.wallinfo[ pos[ POS_X ] ][ pos[ POS_Y ] ] = 255
         self.wallinfo[ route[ POS_X ] ][ route[ POS_Y ] ] = 0
         # distinfo[ x ][ y ]
-        #  0 ～ 255で距離情報を表す
+        #   0 ～ 255で距離情報を表す
         # 距離情報を数字の255で初期化する
         self.distinfo = np.array( [ [ 255 ] * self.N ] * self.N )
         self.distinfo[ start[ POS_X ]  ][ start[ POS_Y ]  ] = 255
-        #for pos in goal:
-        #    self.distinfo[ pos[ POS_X ] ][ pos[ POS_Y ] ] = 255
         self.distinfo[ route[ POS_X ] ][ route[ POS_Y ] ] = 1
+        # direction
+        #   現在マイクロマウスが向いている方向
+        self.direction = TOP
     def get_wallinfo( self ):
         # 現時点で判明している壁情報を取得する
         # 返り値
@@ -178,7 +178,7 @@ class Maze:
         nghbrs = self.neighbor_pos( mypos )[ 0 ]
         nowwall = self.wallinfo[ mypos[ POS_X ], mypos[ POS_Y ] ]
         for i in range( 4 ):
-            # 上下左右マスに壁がある場合はゴールに向かう
+            # ゴールに着いていたらその場に留まる
             if mypos in goal:
                 nextpos = mypos
                 break
@@ -196,6 +196,62 @@ class Maze:
                 min_index = self.n_dist.index( min( self.n_dist ) )
                 nextpos = nghbrs[ min_index ]
         return nextpos
+    def get_nextaction( self, mypos, nextpos ):
+        # 次に進むべき方向を決める
+        mydirection = self.direction
+        next_x = nextpos[ POS_X ] - mypos[ POS_X ]
+        next_y = nextpos[ POS_Y ] - mypos[ POS_Y ]
+        if ( next_x == 0 ) and ( next_y == 0 ):
+            next_direction = 0
+        elif next_x > 0:
+            next_direction = RIGHT
+        elif next_x < 0:
+            next_direction = LEFT
+        elif next_y > 0:
+            next_direction = TOP
+        elif next_y < 0:
+            next_direction = BOTTOM
+        # 次に進むべき方向と今自分が向いている方向から、回転角度を求め、move()を実行
+        if next_direction == 0:
+            mv.move( 0, 0 )
+        elif next_direction == RIGHT:
+            if mydirection == RIGHT:
+                mv.move(   0 , 1 )
+            elif mydirection == TOP:
+                mv.move( -90 , 1 )
+            elif mydirection == LEFT:
+                mv.move( 180 , 1 )
+            elif mydirection == BOTTOM:
+                mv.move(  90 , 1 )
+        elif next_direction == TOP:
+            if mydirection == RIGHT:
+                mv.move(  90 , 1 )
+            elif mydirection == TOP:
+                mv.move(   0 , 1 )
+            elif mydirection == LEFT:
+                mv.move( -90 , 1 )
+            elif mydirection == BOTTOM:
+                mv.move( 180 , 1 )
+        elif next_direction == LEFT:
+            if mydirection == RIGHT:
+                mv.move( 180 , 1 )
+            elif mydirection == TOP:
+                mv.move(  90 , 1 )
+            elif mydirection == LEFT:
+                mv.move(   0 , 1 )
+            elif mydirection == BOTTOM:
+                mv.move( -90 , 1 )
+        elif next_direction == BOTTOM:
+            if mydirection == RIGHT:
+                mv.move( -90 , 1 )
+            elif mydirection == TOP:
+                mv.move( 180 , 1 )
+            elif mydirection == LEFT:
+                mv.move(  90 , 1 )
+            elif mydirection == BOTTOM:
+                mv.move(   0 , 1 )
+        self.direction = next_direction
+        return next_direction
 
 #-----------------------------------------------------------------------------#
 # Function                                                                    #
@@ -228,3 +284,10 @@ def judge_shutdown():
     else:
         ret = "switch[ 0 ] = OFF->OFF"
     return ret
+
+if __name__ == '__main__':
+    # テスト
+    mypos = [ 0, 10 ]
+    nextpos = [ 0, 9 ]
+    mz = Maze()
+    print mz.get_nextaction( mypos, nextpos )
