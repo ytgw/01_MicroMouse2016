@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 '''
 ファイル action.py の概要
-直進走行関数go_straight，回転走行関数rotate，動作有無取得関数is_runningを実装
+直進走行関数go_straight，回転走行関数rotate，
+命令維持関数keep_order，動作有無取得関数is_runningを実装
 それぞれの入出力は各関数のコメントを参照のこと
 '''
 
@@ -16,10 +17,13 @@ import middleware as mw
 GLOBAL_BLOCK_LENGTH = 18e-2     # [m] 一区画の長さ
 GLOBAL_WHELL_WIDTH = 9.5e-2     # [m] 2つのタイヤの距離(調査済み)
 GLOBAL_TIRE_DIAMETER = 4.7e-2   # [m] タイヤの半径(調査済み)
-GLOBAL_ACCEL = 10e-2            # [m/s^2] 加減速の大きさ
+GLOBAL_ACCEL = 7e-2            # [m/s^2] 加減速の大きさ
 GLOBAL_MAX_SPEED = 30e-2        # [m/s] 最高速度
-GLOBAL_ZERO_SPEED = 0.2e-2      # [m/s] ゼロ速度
+GLOBAL_ZERO_SPEED = 1.1e-2      # [m/s] ゼロ速度
 GLOBAL_ZERO_DISTANCE = 0.05e-2  # [m] ゼロ距離
+GLOBAL_STOP_MODE = 0
+GLOBAL_STRAIGHT_MODE = 1
+GLOBAL_ROTATE_MODE = 2
 
 #--------------------------------------------------------------#
 # グローバル変数
@@ -39,6 +43,7 @@ global_old_length_L = 0         # [m] 前回の左壁までの距離
 global_old_length_R = 0         # [m] 前回の右壁までの距離
 
 global_is_running = False       # 動作フラグ(動作中はTrue，停止中はFalse)
+global_mode = GLOBAL_STOP_MODE  # 動作モード(停止，直進，回転)
 
 #--------------------------------------------------------------#
 # 直進走行関数
@@ -57,7 +62,7 @@ def go_straight(block_distance,length_F,length_L,length_R):
     global global_speed
     global global_distance, global_distance_order
     global global_old_length_L, global_old_length_R
-    global global_is_running    
+    global global_is_running, global_mode
     
     # 時間の更新
     time_increment = time.time() - global_old_time
@@ -84,6 +89,7 @@ def go_straight(block_distance,length_F,length_L,length_R):
         global_distance = 0
         global_distance_order = block_distance * GLOBAL_BLOCK_LENGTH
         global_is_running = True
+        global_mode = GLOBAL_STRAIGHT_MODE
     else:
         # 初期呼び出し以外の処理
         residual_distance = global_distance_order - global_distance
@@ -103,6 +109,7 @@ def go_straight(block_distance,length_F,length_L,length_R):
         if (global_time > predict_stop_time) \
         and (math.fabs(global_speed) < GLOBAL_ZERO_SPEED):
             global_is_running = False
+            global_mode = GLOBAL_STOP_MODE
         
     # 直進方向の速度補正
     global_speed = correct_F(global_speed,length_F)
@@ -130,7 +137,7 @@ def rotate(degree_angle):
     global global_time, global_old_time
     global global_rotation_speed
     global global_angle, global_angle_order
-    global global_is_running
+    global global_is_running, global_mode
 
     # 時間の更新
     time_increment = time.time() - global_old_time
@@ -148,6 +155,7 @@ def rotate(degree_angle):
         global_angle = 0
         global_angle_order = math.radians(degree_angle)
         global_is_running = True
+        global_mode = GLOBAL_ROTATE_MODE
     else:
         # 初期呼び出し以外の処理
         rotation_radius = GLOBAL_WHELL_WIDTH/2.0
@@ -172,12 +180,25 @@ def rotate(degree_angle):
         if (global_time > predict_stop_time) \
         and math.fabs(residual_distance) < GLOBAL_ZERO_DISTANCE:
             global_is_running = False
+            global_mode = GLOBAL_STOP_MODE
 
     # モータ出力
     frequency = speed_2_frequency(speed)
     mw.motor([-frequency, frequency])
         
     return global_is_running
+
+#--------------------------------------------------------------#
+# 命令維持関数
+#--------------------------------------------------------------#
+def keep_order(length_F,length_L,length_R):
+    global global_mode
+    if global_mode == GLOBAL_STRAIGHT_MODE:
+        go_straight(0,length_F,length_L,length_R)
+    elif global_mode == GLOBAL_ROTATE_MODE:
+        rotate(0)
+
+    return global_mode
 
 #--------------------------------------------------------------#
 # 動作有無取得関数
