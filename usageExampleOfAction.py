@@ -107,44 +107,6 @@ def tmp_function_for_group_meeting():
                 action.go_straight(1,length_F,length_L,length_R)
                 print 'straight'
 
-
-
-def test():
-    global global_order_is_running
-    
-    if global_order_is_running:
-        # 指令処理の続行
-        keep_order()
-    else:
-        # 経路判断処理
-        left_hand()
-
-def keep_order():
-    
-
-def left_hand():
-    global GLOBAL_DEFAULT_MODE, GLOBAL_FRONT_MODE
-    global GLOBAL_LEFT_MODE, GLOBAL_RIGHT_MODE
-    global GLOBAL_BACK_MODE
-    
-    mode = GLOBAL_DEFAULT_MODE
-    
-    fwall = recognition.check_wall_front()
-    lwall = recognition.check_wall_left()
-    rwall = recognition.check_wall_right()
-    
-    if lwall == 0:
-        mode = GLOBAL_LEFT_MODE
-    elif lwall == 1 and fwall == 0:
-        mode = GLOBAL_FRONT_MODE
-    elif (lwall == 1 and fwall == 1) and rwall == 0:
-        mode = GLOBAL_RIGHT_MODE
-    elif (lwall == 1 and fwall == 1) and rwall == 1:
-        mode = GLOBAL_BACK_MODE
-    
-    run_order(mode)
-
-def run_order(mode)
 #--------------------------------------------------------------#
 # 実行内容
 #--------------------------------------------------------------#
