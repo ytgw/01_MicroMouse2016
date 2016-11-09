@@ -9,7 +9,7 @@ import middleware as mw
 # Declataion                                                                  #
 #-----------------------------------------------------------------------------#
 # 壁あり/なしの閾値
-FRONT_THRESHOLD = 400	            # 閾値(前方)
+FRONT_THRESHOLD = 18	            # 閾値(前方)
 LEFT_THRESHOLD  = 5	            # 閾値(左方)
 RIGHT_THRESHOLD = 5	            # 閾値(右方)
 
@@ -62,13 +62,12 @@ GET_SENSOR_NUM  = 10                # センサ値取得回数
 # Function                                                                    #
 #-----------------------------------------------------------------------------#
 def check_wall_front():
-    """ 距離センサ前方に壁があるかどうかチェックする
+    """ 前方に壁があるかどうかチェックする
     """
     # 初期化
     distance = [0, 0, 0]
     # 距離取得
     distance = get_distance()
-    print "Front_Dis =", distance[FRONT_DIRECTION]
     # 壁ありなし判定
     if distance[FRONT_DIRECTION] > FRONT_THRESHOLD:
         return WALL_ON	# 壁あり
@@ -76,13 +75,12 @@ def check_wall_front():
         return WALL_OFF	# 壁なし
 
 def check_wall_left():
-    """ 距離センサ左方に壁があるかどうかチェックする
+    """ 左方に壁があるかどうかチェックする
     """
     # 初期化
     distance = [0, 0, 0]
     # 距離取得
     distance = get_distance()
-    print "Left_Dis =", distance[LEFT_DIRECTION]
     # 壁ありなし判定
     if distance[LEFT_DIRECTION] > LEFT_THRESHOLD:
         return WALL_ON	# 壁あり
@@ -90,13 +88,12 @@ def check_wall_left():
         return WALL_OFF	# 壁なし
 
 def check_wall_right():
-    """ 距離センサより右方に壁があるかどうかチェックする
+    """ 右方に壁があるかどうかチェックする
     """
     # 初期化
     distance = [0, 0, 0]
     # 距離取得
     distance = get_distance()
-    print "Right_Dis =", distance[RIGHT_DIRECTION]
     # 壁ありなし判定
     if distance[RIGHT_DIRECTION] > RIGHT_THRESHOLD:
         return WALL_ON	# 壁あり
@@ -194,6 +191,13 @@ def test_recognition():
         print "----------"
         print "LOOP =",num
         print "----------"
+        # センサ値取得
+        sensor_value = get_sensor_value()
+        # 距離取得
+        distance = get_distance()
+        print "Front =", sensor_value[FRONT_DIRECTION],"|",distance[FRONT_DIRECTION]
+        print "Left  =", sensor_value[LEFT_DIRECTION],"|",distance[LEFT_DIRECTION]
+        print "Right =", sensor_value[RIGHT_DIRECTION],"|",distance[RIGHT_DIRECTION]
 	# LED点灯
         led_state[EXEC_LED_NO] = LED_ON
 	# 前壁チェック(壁あり:LED点灯)
