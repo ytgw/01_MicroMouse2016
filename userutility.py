@@ -81,7 +81,38 @@ class Maze:
         if ( ( wallinfo & BOTTOM ) == BOTTOM ) and (chk[3] == True):
             self.wallinfo[ nghbrs[ 3 ][ POS_X ] ][ nghbrs[ 3 ][ POS_Y ] ] |= TOP  
         # 探索完了
-        self.wallinfo[ set_pos[ POS_X ] ][ set_pos[ POS_Y ] ] |= ( SERCH_COMPLETE ) 
+        self.wallinfo[ set_pos[ POS_X ] ][ set_pos[ POS_Y ] ] |= ( SERCH_COMPLETE )
+    def change_wallinfo_axis( self, mydirection, new_wallinfo ):
+        wallinfo = 0
+        bit0 = ( new_wallinfo & 0b0001 ) >> 0
+        bit1 = ( new_wallinfo & 0b0010 ) >> 1
+        bit2 = ( new_wallinfo & 0b0100 ) >> 2
+        bit3 = ( new_wallinfo & 0b1000 ) >> 3
+        if mydirection == RIGHT:
+            tmp0 = bit1
+            tmp1 = bit2
+            tmp2 = bit3
+            tmp3 = bit0
+        elif mydirection == TOP:
+            tmp0 = bit0
+            tmp1 = bit1
+            tmp2 = bit2
+            tmp3 = bit3
+        elif mydirection == LEFT:
+            tmp0 = bit3
+            tmp1 = bit0
+            tmp2 = bit1
+            tmp3 = bit2
+        elif mydirection == BOTTOM:
+            tmp0 = bit2
+            tmp1 = bit3
+            tmp2 = bit0
+            tmp3 = bit1
+        wallinfo = wallinfo | ( tmp0 << 0 )
+        wallinfo = wallinfo | ( tmp1 << 1 )
+        wallinfo = wallinfo | ( tmp2 << 2 )
+        wallinfo = wallinfo | ( tmp3 << 3 )
+        return wallinfo
     def display_wallinfo( self ):
         # 地図情報をコマンドラインに表示する
         tempinfo = self.wallinfo
@@ -169,7 +200,6 @@ class Maze:
         return neighbors, chk_flag
     def get_nextpos( self, mypos ):
         # 距離情報を元に、次に進むマスを決める
-        # 探索済のマスがある方向に進まないようになっているので、1回目の走行用
         # 引数
         #   mypos : 現在地を表す(x,y)座標のリストもしくはタプル。
         # 返り値
@@ -290,4 +320,4 @@ if __name__ == '__main__':
     mypos = [ 0, 10 ]
     nextpos = [ 0, 9 ]
     mz = Maze()
-    print mz.get_nextaction( mypos, nextpos )
+    print mz.change_wallinfo_axis( BOTTOM, 9 )
