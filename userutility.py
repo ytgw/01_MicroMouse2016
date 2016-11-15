@@ -83,6 +83,7 @@ class Maze:
         # 探索完了
         self.wallinfo[ set_pos[ POS_X ] ][ set_pos[ POS_Y ] ] |= ( SERCH_COMPLETE )
     def change_wallinfo_axis( self, mydirection, new_wallinfo ):
+        # ローカル座標とグローバル座標の壁情報の辻褄をわせる関数
         wallinfo = 0
         bit0 = ( new_wallinfo & 0b0001 ) >> 0
         bit1 = ( new_wallinfo & 0b0010 ) >> 1
@@ -160,6 +161,7 @@ class Maze:
             step += 1
     def adachi_2nd_run( self ):
         # 足立法で各マスの距離情報を取得する
+        # 探索済のマスしか進まない
         step = self.minstep
         flag = True
         self.distinfo = np.array( [ [ 255 ] * self.N ] * self.N )
@@ -176,6 +178,7 @@ class Maze:
                         # 上下左右マスの歩数マップを更新
                         for dr in range( len( DIRECTION ) ):
                             if (self.wallinfo[ cntr[ POS_X ] ][ cntr[ POS_Y ] ] & DIRECTION[ dr ] ) != DIRECTION[ dr ]:
+                                # 探索済のマスしか進まない
                                 if ( ( self.wallinfo[ cntr[ POS_X ] ][ cntr[ POS_Y ] ] & SERCH_COMPLETE ) == ( SERCH_COMPLETE )  ) and ( self.distinfo[ nghbrs[ dr ][ POS_X ] ][ nghbrs[ dr ][ POS_Y ] ] > self.distinfo[ cntr[ POS_X ] ][ cntr[ POS_Y ] ] ):
                                     self.distinfo[ nghbrs[ dr ][ POS_X ] ][ nghbrs[ dr ][ POS_Y ] ] = 1 + self.distinfo[ cntr[ POS_X ] ][ cntr[ POS_Y ] ]
                                     flag = True
@@ -240,46 +243,7 @@ class Maze:
         elif next_y > 0:
             next_direction = TOP
         elif next_y < 0:
-            next_direction = BOTTOM
-        # 次に進むべき方向と今自分が向いている方向から、回転角度を求め、move()を実行
-        if next_direction == 0:
-            mv.move( 0, 0 )
-        elif next_direction == RIGHT:
-            if mydirection == RIGHT:
-                mv.move(   0 , 1 )
-            elif mydirection == TOP:
-                mv.move( -90 , 1 )
-            elif mydirection == LEFT:
-                mv.move( 180 , 1 )
-            elif mydirection == BOTTOM:
-                mv.move(  90 , 1 )
-        elif next_direction == TOP:
-            if mydirection == RIGHT:
-                mv.move(  90 , 1 )
-            elif mydirection == TOP:
-                mv.move(   0 , 1 )
-            elif mydirection == LEFT:
-                mv.move( -90 , 1 )
-            elif mydirection == BOTTOM:
-                mv.move( 180 , 1 )
-        elif next_direction == LEFT:
-            if mydirection == RIGHT:
-                mv.move( 180 , 1 )
-            elif mydirection == TOP:
-                mv.move(  90 , 1 )
-            elif mydirection == LEFT:
-                mv.move(   0 , 1 )
-            elif mydirection == BOTTOM:
-                mv.move( -90 , 1 )
-        elif next_direction == BOTTOM:
-            if mydirection == RIGHT:
-                mv.move( -90 , 1 )
-            elif mydirection == TOP:
-                mv.move( 180 , 1 )
-            elif mydirection == LEFT:
-                mv.move(  90 , 1 )
-            elif mydirection == BOTTOM:
-                mv.move(   0 , 1 )
+            next_direction = BOTTOM      
         self.direction = next_direction
         return next_direction
 
