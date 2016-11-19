@@ -3,16 +3,20 @@ import os
 import time
 import numpy as np
 import middleware as mw
-import move as mv
+import action
+import recognition
 
 #-----------------------------------------------------------------------------#
 # Declation                                                                  #
 #-----------------------------------------------------------------------------#
 # スタート地点、ゴール地点、ゴールへの侵入経路の座標 ( x  , y )
 start = ( 0  , 0 )
+#goal  = ( ( 3 , 3 ) , ( 3 , 3 ) ,  ( 3 , 3 ) , ( 3 , 3 ) )
 goal  = ( ( 7 , 7 ) , ( 7 , 8 ) ,  ( 8 , 7 ) , ( 8 , 8 ) )
 #goal  = ( ( 2 , 11 ) , ( 2 , 12 ) ,  ( 3 , 11 ) , ( 3 , 12 ) )
-route = (  6 , 8 )
+#route = ( 3 , 3 )
+route = ( 7 , 7 )
+##route = (  7 , 7 )
 #route = (  9 , 8 )
 #route = (  4 , 11 )
 #route = ( 7 , 6 )
@@ -34,6 +38,7 @@ POS_Y  = 1
 # 迷路クラス
 class Maze:
     def __init__( self ):
+##        self.N = 16
         self.N = 16
         self.minstep = 1
         self.n_dist = [ 0, 0, 0, 0 ]
@@ -81,39 +86,7 @@ class Maze:
         if ( ( wallinfo & BOTTOM ) == BOTTOM ) and (chk[3] == True):
             self.wallinfo[ nghbrs[ 3 ][ POS_X ] ][ nghbrs[ 3 ][ POS_Y ] ] |= TOP  
         # 探索完了
-        self.wallinfo[ set_pos[ POS_X ] ][ set_pos[ POS_Y ] ] |= ( SERCH_COMPLETE )
-    def change_wallinfo_axis( self, mydirection, new_wallinfo ):
-        # ローカル座標とグローバル座標の壁情報の辻褄をわせる関数
-        wallinfo = 0
-        bit0 = ( new_wallinfo & 0b0001 ) >> 0
-        bit1 = ( new_wallinfo & 0b0010 ) >> 1
-        bit2 = ( new_wallinfo & 0b0100 ) >> 2
-        bit3 = ( new_wallinfo & 0b1000 ) >> 3
-        if mydirection == RIGHT:
-            tmp0 = bit1
-            tmp1 = bit2
-            tmp2 = bit3
-            tmp3 = bit0
-        elif mydirection == TOP:
-            tmp0 = bit0
-            tmp1 = bit1
-            tmp2 = bit2
-            tmp3 = bit3
-        elif mydirection == LEFT:
-            tmp0 = bit3
-            tmp1 = bit0
-            tmp2 = bit1
-            tmp3 = bit2
-        elif mydirection == BOTTOM:
-            tmp0 = bit2
-            tmp1 = bit3
-            tmp2 = bit0
-            tmp3 = bit1
-        wallinfo = wallinfo | ( tmp0 << 0 )
-        wallinfo = wallinfo | ( tmp1 << 1 )
-        wallinfo = wallinfo | ( tmp2 << 2 )
-        wallinfo = wallinfo | ( tmp3 << 3 )
-        return wallinfo
+        self.wallinfo[ set_pos[ POS_X ] ][ set_pos[ POS_Y ] ] |= ( SERCH_COMPLETE ) 
     def display_wallinfo( self ):
         # 地図情報をコマンドラインに表示する
         tempinfo = self.wallinfo
@@ -161,7 +134,6 @@ class Maze:
             step += 1
     def adachi_2nd_run( self ):
         # 足立法で各マスの距離情報を取得する
-        # 探索済のマスしか進まない
         step = self.minstep
         flag = True
         self.distinfo = np.array( [ [ 255 ] * self.N ] * self.N )
@@ -178,7 +150,6 @@ class Maze:
                         # 上下左右マスの歩数マップを更新
                         for dr in range( len( DIRECTION ) ):
                             if (self.wallinfo[ cntr[ POS_X ] ][ cntr[ POS_Y ] ] & DIRECTION[ dr ] ) != DIRECTION[ dr ]:
-                                # 探索済のマスしか進まない
                                 if ( ( self.wallinfo[ cntr[ POS_X ] ][ cntr[ POS_Y ] ] & SERCH_COMPLETE ) == ( SERCH_COMPLETE )  ) and ( self.distinfo[ nghbrs[ dr ][ POS_X ] ][ nghbrs[ dr ][ POS_Y ] ] > self.distinfo[ cntr[ POS_X ] ][ cntr[ POS_Y ] ] ):
                                     self.distinfo[ nghbrs[ dr ][ POS_X ] ][ nghbrs[ dr ][ POS_Y ] ] = 1 + self.distinfo[ cntr[ POS_X ] ][ cntr[ POS_Y ] ]
                                     flag = True
@@ -203,6 +174,7 @@ class Maze:
         return neighbors, chk_flag
     def get_nextpos( self, mypos ):
         # 距離情報を元に、次に進むマスを決める
+        # 探索済のマスがある方向に進まないようになっているので、1回目の走行用
         # 引数
         #   mypos : 現在地を表す(x,y)座標のリストもしくはタプル。
         # 返り値
@@ -217,6 +189,8 @@ class Maze:
                 break
             else:
                 self.n_dist[ i ] = self.distinfo[ nghbrs[ i ][ POS_X ] ][ nghbrs[ i ][ POS_Y ] ]
+                #print "i=",i
+                #print "DIRECTION=",DIRECTION[ i ]
                 if ( nowwall & DIRECTION[ i ] ) == DIRECTION[ i ]:
                     # 壁がある場合はその方向に進まないようにする
                     # ( min関数でindexが選ばれないようにするために255を代入 )
@@ -225,6 +199,7 @@ class Maze:
                     if nghbrs[ i ] in goal:
                         nextpos = nghbrs[ i ]
                         break
+                #print "self.n_dist=",self.n_dist[ i ]
                 # 四方マスのうち、ゴールまでの距離が同じマスがある場合「右->上->左->下」の順に優先的に選択される
                 min_index = self.n_dist.index( min( self.n_dist ) )
                 nextpos = nghbrs[ min_index ]
@@ -243,7 +218,7 @@ class Maze:
         elif next_y > 0:
             next_direction = TOP
         elif next_y < 0:
-            next_direction = BOTTOM      
+            next_direction = BOTTOM
         self.direction = next_direction
         return next_direction
 
@@ -284,4 +259,4 @@ if __name__ == '__main__':
     mypos = [ 0, 10 ]
     nextpos = [ 0, 9 ]
     mz = Maze()
-    print mz.change_wallinfo_axis( BOTTOM, 9 )
+    print mz.get_nextaction( mypos, nextpos )

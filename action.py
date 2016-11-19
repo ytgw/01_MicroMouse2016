@@ -17,13 +17,15 @@ import middleware as mw
 GLOBAL_BLOCK_LENGTH = 18e-2     # [m] 一区画の長さ
 GLOBAL_WHELL_WIDTH = 9.5e-2     # [m] 2つのタイヤの距離(調査済み)
 GLOBAL_TIRE_DIAMETER = 4.7e-2   # [m] タイヤの半径(調査済み)
-GLOBAL_ACCEL = 7e-2             # [m/s^2] 加減速の大きさ
-GLOBAL_MAX_SPEED = 30e-2        # [m/s] 最高速度
-GLOBAL_ZERO_SPEED = 1.1e-2      # [m/s] ゼロ速度
-GLOBAL_ZERO_DISTANCE = 0.05e-2  # [m] ゼロ距離
+GLOBAL_ACCEL = 8e-2             # [m/s^2] 加減速の大きさ
+GLOBAL_ROTATE_ACCEL = 4e-2
+GLOBAL_MAX_SPEED = 32e-2        # [m/s] 最高速度
+GLOBAL_ZERO_SPEED = 1.2e-2      # [m/s] ゼロ速度
+GLOBAL_ZERO_DISTANCE = 0.03e-2  # [m] ゼロ距離
 GLOBAL_STOP_MODE = 0            # [-] 停止状態
 GLOBAL_STRAIGHT_MODE = 1        # [-] 直進状態
 GLOBAL_ROTATE_MODE = 2          # [-] 回転状態
+GLOBAL_MINIMUM_SPEED = 0.01
 
 #--------------------------------------------------------------#
 # グローバル変数
@@ -72,6 +74,7 @@ def go_straight(block_distance,length_F,length_L,length_R):
         global_distance_order = block_distance * GLOBAL_BLOCK_LENGTH
         global_is_running = True
         global_mode = GLOBAL_STRAIGHT_MODE
+        control_input = 0
         
     elif global_mode == GLOBAL_STRAIGHT_MODE:
         # 直進状態時呼び出しの処理
@@ -101,9 +104,13 @@ def go_straight(block_distance,length_F,length_L,length_R):
         # 残り距離の算出
         residual_distance = global_distance_order - global_distance        
         # 台形加速の実装
-        global_speed = ramp_speed_control(global_time_for_straight,global_speed,residual_distance)
+        global_speed = ramp_speed_control(global_time_for_straight,global_speed,residual_distance,GLOBAL_ACCEL)
+        if global_speed < 0:
+            global_speed = 0
         # 直進方向の速度補正
         global_speed = correct_F(global_speed,length_F)
+        if math.fabs(global_speed) < GLOBAL_MINIMUM_SPEED:
+            global_speed = np.sign(global_speed)*GLOBAL_MINIMUM_SPEED
         # 左右方向の速度補正
         control_input = correct_LR(length_L,length_R,diff_length_L,diff_length_R)
 
@@ -124,16 +131,19 @@ def go_straight(block_distance,length_F,length_L,length_R):
             global_speed = 0
             global_is_running = False
             global_mode = GLOBAL_STOP_MODE
-        
-        #----------------------#
-        # モータ指令の算出
-        #----------------------#
-        # モータ周波数への変換
-        left_Hz = speed_2_frequency( global_speed - control_input )
-        right_Hz = speed_2_frequency( global_speed + control_input )
-        # モータ出力
-        mw.motor([left_Hz, right_Hz])
+    else:
+        global_speed = 0
+        control_input = 0
 
+    #----------------------#
+    # モータ指令の算出
+    #----------------------#
+    # モータ周波数への変換
+    left_Hz = speed_2_frequency( global_speed - control_input )
+    right_Hz = speed_2_frequency( global_speed + control_input )
+    # モータ出力
+    mw.motor([left_Hz, right_Hz])
+    
     return global_is_running
 
 #--------------------------------------------------------------#
@@ -185,7 +195,9 @@ def rotate(degree_angle):
         residual_angle = global_angle_order - global_angle
         residual_distance = rotation_radius * residual_angle
         # 台形加速の実装
-        speed = ramp_speed_control(global_time_for_rotation,speed,residual_distance)
+        speed = ramp_speed_control(global_time_for_rotation,speed,residual_distance,GLOBAL_ROTATE_ACCEL)
+        if math.fabs(speed) < GLOBAL_MINIMUM_SPEED:
+            speed = np.sign(speed)*GLOBAL_MINIMUM_SPEED
         global_rotation_speed = speed / rotation_radius
 
         #----------------------#
@@ -202,14 +214,17 @@ def rotate(degree_angle):
         # 停止状態以降
         if (global_time_for_rotation > predict_stop_time) \
         and math.fabs(residual_distance) < GLOBAL_ZERO_DISTANCE:
+            speed = 0
             global_is_running = False
             global_mode = GLOBAL_STOP_MODE
-        
-        #----------------------#
-        # モータ指令の算出
-        #----------------------#
-        frequency = speed_2_frequency(speed)
-        mw.motor([-frequency, frequency])
+    else:
+        speed = 0
+
+    #----------------------#
+    # モータ指令の算出
+    #----------------------#
+    frequency = speed_2_frequency(speed)
+    mw.motor([-frequency, frequency])
         
     return global_is_running
 
@@ -222,12 +237,13 @@ def keep_order(length_F,length_L,length_R):
     入力:前壁までの距離，左壁までの距離，右壁までの距離
     出力:動作状態(停止，直進，回転)
     '''
-    global global_mode
-    
-    if global_mode == GLOBAL_STRAIGHT_MODE:
-        go_straight(0,length_F,length_L,length_R)
-    elif global_mode == GLOBAL_ROTATE_MODE:
-        rotate(0)
+    if global_is_running:
+        if global_mode == GLOBAL_STRAIGHT_MODE:
+            go_straight(0,length_F,length_L,length_R)
+        elif global_mode == GLOBAL_ROTATE_MODE:
+            rotate(0)
+    else:
+        mw.motor([0,0])
 
     return global_mode
 
@@ -240,7 +256,6 @@ def is_running():
     入力:void
     出力:動作有無フラグ(Trueのとき動作中，Falseのとき停止中)
     '''
-    global global_is_running
     return global_is_running
 
 
@@ -253,17 +268,17 @@ def is_running():
 #--------------------------------------------------------------#
 # 台形加速関数
 #--------------------------------------------------------------#
-def ramp_speed_control(time,speed,residual_distance):
+def ramp_speed_control(time,speed,residual_distance,accel):
     # 台形加速用の関数
-    if ( (speed**2)/(2*GLOBAL_ACCEL) ) < residual_distance:
+    if ( (speed**2)/(2*accel) ) < residual_distance:
         # 増速
-        if (GLOBAL_ACCEL*time) > GLOBAL_MAX_SPEED:
+        if (accel*time) > GLOBAL_MAX_SPEED:
             return_speed = GLOBAL_MAX_SPEED
         else:
-            return_speed = GLOBAL_ACCEL*time
+            return_speed = accel*time
     else:
         # 減速
-        speed_square = math.fabs(2*GLOBAL_ACCEL*residual_distance)
+        speed_square = math.fabs(2*accel*residual_distance)
         return_speed = np.sign(residual_distance) * math.sqrt(speed_square)
         
     return return_speed
@@ -295,13 +310,14 @@ def correct_LR(length_L,length_R,diff_L,diff_R):
     # 左右方向の補正→左右センサ値一定を比例制御することで補正
     # 参考:http://mice.deca.jp/cgi/dokuwiki/doku.php?id=%E5%A3%81%E5%88%B6%E5%BE%A1
     ERROR = -1                  # [m] センサ値のエラー値用
-    REFERENCE_L = 3.5e-2        # [m] 左センサの参照値
-    THRESHOLD_L = 7e-2          # [m] 左センサの閾値
+    REFERENCE_L = 3.3e-2        # [m] 左センサの参照値
+    THRESHOLD_L = 7.3e-2          # [m] 左センサの閾値
     THRESHOLD_DIFF_L = 5e-2     # [m/m] 左センサの直進距離変化に対する左右距離変化量の閾値
     REFERENCE_R = 3.5e-2        # [m] 右センサの参照値
-    THRESHOLD_R = 7e-2          # [m] 右センサの閾値
+    THRESHOLD_R = 7.5e-2          # [m] 右センサの閾値
     THRESHOLD_DIFF_R = 5e-2     # [m/m] 右センサの直進距離変化に対する左右距離変化量の閾値
-    KpLR = 1.5                  # 比例制御の定数
+    KpLR = 0.4                  # 比例制御の定数
+    MAXIMUM_RL_ERROR = 8e-2
     
     l_error = length_L-REFERENCE_L
     r_error = length_R-REFERENCE_R
@@ -310,12 +326,15 @@ def correct_LR(length_L,length_R,diff_L,diff_R):
     if is_L_good and is_R_good:
         rl_error = l_error - r_error
     elif is_L_good:
-        rl_error = 2*l_error
+        rl_error = 2.5*l_error
     elif is_R_good:
-        rl_error = -2*r_error
+        rl_error = -2.5*r_error
     else:
         rl_error = 0
-    
+        
+    if math.fabs(rl_error) > MAXIMUM_RL_ERROR:
+        rl_error = np.sign(rl_error) * MAXIMUM_RL_ERROR
+
     control_input = KpLR * rl_error
     return control_input
 
