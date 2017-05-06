@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 '''
 ファイル usageExampleOfAction の概要
+action.pyで定義した関数の使い方を記述
 action.pyでは直進走行関数go_straight，回転走行関数rotate，動作有無取得関数is_runningを実装
 各関数の使用例はテスト関数を参照のこと
 go_straightの使用例　test_for_ramp_control()およびtest_for_correct()は
