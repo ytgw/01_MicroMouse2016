@@ -1,9 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 Created on Sun Aug 28 14:31:24 2016
-
 @author: ytgw
-
 関数 move(direction, distance) の概要
 出力 void
 引数 direction:方向 反時計回りが正．単位はdegreeで，基本の使用範囲は-180〜180°
