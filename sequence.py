@@ -11,7 +11,6 @@
 # Licence:     <your licence>
 #-------------------------------------------------------------------------------
 
-import middleware as mw
 import recognition as rcg
 import action as act
 import stop as stop
@@ -45,7 +44,7 @@ ROTATEOPPOSIT = 175
 def selectmode():
     mode = [0,0,0]
     # タクトスイッチのスイッチ取得
-    swstate = mw.switchstate()
+    swstate = rcg.get_switch_state()
     # 走行モード
     for swno in [0, 1, 2]:
         if swstate[swno] == 0:
@@ -123,21 +122,21 @@ def main():
         # タクトスイッチ0が押されたら
         if mode[0] == 1:
             # LED0を点灯
-            mw.led([1,0,0,0])
+            act.led([1,0,0,0])
             # 走行モードを探索に設定
             runnninngmode = 0
 
         # タクトスイッチ1が押されたら
         if mode[1] == 1:
             # LED1を点灯
-            mw.led([0,1,0,0])
+            act.led([0,1,0,0])
             # 走行モードを最短に設定
             runnninngmode = 1
 
         # タクトスイッチ2が押されたら
         if mode[2] == 1:
             # LED2を点灯
-            mw.led([0,0,1,0])
+            act.led([0,0,1,0])
             # 状態ステータスを開始に設定
             runstatus = 1
         
@@ -194,7 +193,7 @@ def main():
                         # ゴールに到着
                         flgGoal = 1
                         # LED3を点灯
-                        mw.led([0,0,0,1])
+                        act.led([0,0,0,1])
                     else:
                         # 現在位置を1順前の次の位置に設定
                         mypos = nextpos
@@ -289,11 +288,11 @@ def main():
                         else:
                             mydirection = next_direction
 
-                swstate = mw.switchstate()
+                swstate = rcg.get_switch_state()
                 # タクトスイッチ1が押されたら
                 if swstate[1] == 0:
                     # LED3を点灯
-                    mw.led([0,0,0,1])
+                    act.led([0,0,0,1])
                     flgGoal = 1
 
                 # ゴールに到着したら

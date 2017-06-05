@@ -183,6 +183,10 @@ def get_sensor_value():
     sensor_value[RIGHT_DIRECTION] = np.median(r_buf)
 
     return sensor_value
+
+def get_switch_state():
+    switch_state = mw.switchstate()
+    return switchstate
     
 #-----------------------------------------------------------------------------#
 # Test                                                                        #

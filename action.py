@@ -50,6 +50,17 @@ global_is_running = False       # 動作フラグ(動作中はTrue，停止中�
 global_mode = GLOBAL_STOP_MODE  # 動作状態(停止，直進，回転)
 
 #--------------------------------------------------------------#
+# LED出力関数とブザー出力関数
+#--------------------------------------------------------------#
+def led(led_state):
+    error_state = mw.led(led_state)
+    return error_state
+
+def buzzer(frequency):
+    error_state = mw.buzzer(frequency)
+    return error_state
+
+#--------------------------------------------------------------#
 # 直進走行関数
 #--------------------------------------------------------------#
 def go_straight(block_distance,length_F,length_L,length_R):
