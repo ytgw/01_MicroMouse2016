@@ -186,7 +186,7 @@ def get_sensor_value():
 
 def get_switch_state():
     switch_state = mw.switchstate()
-    return switchstate
+    return switch_state
     
 #-----------------------------------------------------------------------------#
 # Test                                                                        #
