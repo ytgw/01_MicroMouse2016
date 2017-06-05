@@ -1,6 +1,4 @@
 # coding: UTF-8
-import numpy as np
-import middleware as mw
 import userutility as utl
 import maze_simulator.maze_simulator as ms
 
