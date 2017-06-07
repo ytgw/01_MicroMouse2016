@@ -185,6 +185,8 @@ def get_sensor_value():
     return sensor_value
 
 def get_switch_state():
+    """ スイッチ情報を取得
+    """
     switch_state = mw.switchstate()
     return switch_state
     
