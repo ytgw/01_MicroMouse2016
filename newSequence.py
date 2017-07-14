@@ -17,6 +17,7 @@ import action as act
 import stop as stop
 import userutility as utl
 import sys
+import time
 
 #-----------------------------------------------------------------------------#
 # Declation                                                                  #
@@ -24,7 +25,7 @@ import sys
 # グローバル定数
 # 状態
 GLOBAL_INITIAL_MODE = 0    # 初期状態
-GLOBAL_SEARCH_MODE  = 1    # 探索状態
+GLOBAL_SEARCH_MODE  = 1    # 探索走行状態
 GLOBAL_FAST_MODE    = 2    # 最速走行状態
 GLOBAL_GOAL_MODE    = 3    # ゴール状態
 
@@ -46,7 +47,7 @@ LEFT_DIRECTION  = 1     # 左方
 RIGHT_DIRECTION = 2     # 右方
 
 # 初期状態
-GLOBAL_INITIAL_POSITION  = [0,0]
+GLOBAL_INITIAL_POSITION  = (0,0)
 GLOBAL_INITIAL_WALL_INFO = 13
 GLOBAL_INITIAL_DIRECTION = GLOBAL_NORTH
 
@@ -69,7 +70,7 @@ def main():
     mode = GLOBAL_INITIAL_MODE
     
     while True:
-        #----- 状態の遷移と表示 -----#
+        #----- 状態の遷移 -----#
         presentMode = mode
         mode = selectMode(presentMode, global_position, utl.goal)
         
@@ -99,9 +100,19 @@ def main():
         if mode == GLOBAL_INITIAL_MODE:
             initialModeFunction()
         elif mode == GLOBAL_SEARCH_MODE:
+            # searchModeFunctionは座標移動が完了するまで処理を専有する関数
             searchModeFunction()
+            # 動作終了通知のためにブザーを一瞬鳴動
+            act.buzzer(440)
+            time.sleep(0.1)
+            act.buzzer(0)
         elif mode == GLOBAL_FAST_MODE:
+            # fastModeFunctionは座標移動が完了するまで処理を専有する関数
             fastModeFunction()
+            # 動作終了通知のためにブザーを一瞬鳴動
+            act.buzzer(440)
+            time.sleep(0.1)
+            act.buzzer(0)
         elif mode == GLOBAL_GOAL_MODE:
             goalModeFunction()
         else:
@@ -115,13 +126,14 @@ def selectMode(presentMode, presentPosition, goalPositions):
     入力:現在の状態，現在の位置，ゴール位置のリスト
     出力:遷移後の状態
     タクトスイッチ0を押すと初期状態へ遷移
-    タクトスイッチ1を押すと初期状態のときは探索状態へ遷移するが，
+    タクトスイッチ1を押すと初期状態のときは探索走行状態へ遷移するが，
     ゴール状態のときは最速走行状態へ遷移し，それ以外の状態では遷移なし
     タクトスイッチ2を押すとプログラム終了
-    現在座標がゴール座標に含まれていたらゴール状態に遷移
+    探索状態もしくは最速走行状態時に，現在座標がゴール座標に含まれていたら
+    ゴール状態に遷移
     '''
     mode = presentMode
-
+    
     # タクトスイッチのスイッチ取得
     swState = rcg.get_switch_state()
     
@@ -135,6 +147,7 @@ def selectMode(presentMode, presentPosition, goalPositions):
             mode = GLOBAL_FAST_MODE
     elif swState[2] == 0:
         print "Sequence is killed by using switch"
+        stop.stop()
         act.led([0,0,0,0])
         act.buzzer(0)
         sys.exit()
@@ -167,9 +180,10 @@ def initialModeFunction():
 def searchModeFunction():
     '''
     探索走行状態の動作関数
+    座標移動が完了するまで処理を専有する
     '''
     global global_maze, global_position, global_direction
-
+    
     # デバッグ用表示
     print "Present position  is (%d, %d)" % (global_position[0], global_position[1])
     if global_direction == GLOBAL_EAST:
@@ -186,9 +200,14 @@ def searchModeFunction():
     print "----------"
     
     if global_position == GLOBAL_INITIAL_POSITION:
-        # 最初は半歩前進後に座標更新
+        # 壁情報のセット
+        wallInfoForMaze = GLOBAL_INITIAL_WALL_INFO
+        global_maze.set_wallinfo(global_position,wallInfoForMaze)
+        # 最初は半歩前進
         goRotateGo(0,0,0.5)     # goRotateGoは動作終了まで処理を専有する関数
-        global_position = [0,1]
+        # 座標と方向の更新
+        global_position  = (0,1)
+        global_direction = GLOBAL_NORTH
     else:
         # 壁情報のセット
         wallInfoFromRcg = rcg.check_wall()
@@ -207,17 +226,19 @@ def searchModeFunction():
         if global_position in utl.goal:
             # 最後は半歩前進
             goRotateGo(0,0,0.5)     # goRotateGoは動作終了まで処理を専有する関数
+            global_maze.display_distinfo()
+            global_maze.display_wallinfo()
             print "You reached goal"
 
 
 def fastModeFunction():
     '''
     最速走行状態の動作関数
+    座標移動が完了するまで処理を専有する
     '''
     global global_maze, global_position, global_direction
-
+    
     # デバッグ用表示
-    print "FAST MODE is not tested"
     print "Present position  is (%d, %d)" % (global_position[0], global_position[1])
     if global_direction == GLOBAL_EAST:
         directionStr = "East"
@@ -235,27 +256,36 @@ def fastModeFunction():
     # 各区画の距離情報を更新
     global_maze.adachi_2nd_run()
     
-    # 移動指令の情報算出
-    virtualPresentPosition = global_position
-    totalDistance = 0
+    # 仮想的に現在座標を移動させ，現実での移動距離と回転角度をシミュレーションする
+    virtualPresentPosition = global_position    # 仮想現在座標
+    totalDistance = 0   # 移動距離
     while True:
+        # 仮想現在座標に対する移動先座標の取得
         virtualNextPosition = global_maze.get_nextpos(virtualPresentPosition)
+        # 仮想の移動距離，回転角度，回転後方向を取得
         (tmpDistance, rotateAngle, nextDirection) \
         = calcDistanceRotateAngle(virtualPresentPosition, virtualNextPosition, global_direction)
-        if global_direction == nextDirection:
-            totalDistance += tmpDistance
-            virtualPresentPosition = virtualNextPosition
-        else:
+        if (global_direction != nextDirection)\
+        or (virtualPresentPosition in utl.goal)\
+        or (tmpDistance == 0):
+            # (回転する必要がある場合)or(ゴールに到達した場合)or(移動距離が0の場合)は仮想移動を終了
             break
+        else:
+            # 移動距離を加算
+            totalDistance += tmpDistance
+            # 仮想座標を更新
+            virtualPresentPosition = virtualNextPosition
     
-    # 移動指令
+    # シミューレーションした移動距離と回転角度から移動指令
     goRotateGo(totalDistance,rotateAngle,0)
-
+    
     # 座標と方向の更新
     global_position  = virtualPresentPosition
     global_direction = nextDirection
     
     if global_position in utl.goal:
+        global_maze.display_distinfo()
+        global_maze.display_wallinfo()
         print "You reached goal"
 
 
@@ -297,8 +327,6 @@ def change_the_world(mydirection, local_wallinfo):
     出力:方向を補正した迷路用壁情報
     '''
     global_wallinfo = 0
-    #print "mydirectionC=",mydirection
-    #print "local_wallinfoC",local_wallinfo
     bit0 = ( local_wallinfo & 0b0001 ) >> 0
     bit1 = ( local_wallinfo & 0b0010 ) >> 1
     bit2 = ( local_wallinfo & 0b0100 ) >> 2 
@@ -324,17 +352,18 @@ def change_the_world(mydirection, local_wallinfo):
         new1 = bit3
         new2 = bit0
         new3 = bit1
-
+    
     global_wallinfo = global_wallinfo | ( new0 << 0 )
     global_wallinfo = global_wallinfo | ( new1 << 1 )
     global_wallinfo = global_wallinfo | ( new2 << 2 )
     global_wallinfo = global_wallinfo | ( new3 << 3 )
+    
     return global_wallinfo
 
 
 def oneBlockMove(presentPosition, nextPosition, presentDirection):
     '''
-    ブロック移動関数
+    一区画移動関数
     入力:現在座標，移動先座標，現在方向
     出力:移動後方向
     現在座標と移動先座標をもとに移動する
@@ -344,8 +373,9 @@ def oneBlockMove(presentPosition, nextPosition, presentDirection):
     xDist = nextPosition[0] - presentPosition[0]
     yDist = nextPosition[1] - presentPosition[1]
     nextDirection = presentDirection
-
+    
     if (xDist != 0) and (yDist != 0):
+        # xとyの両方向を移動させるときはエラーが発生する
         print "An error occurs in oneBlockMove function"
     else:
         # x方向の移動
@@ -407,37 +437,40 @@ def goRotateGo(blockDistance1,degreeAngle,blockDistance2):
     '''
     # 直進1
     dist = rcg.get_distance()
-    dist[FRONT_DIRECTION] = -1
+    dist[FRONT_DIRECTION] = -1  # 前方向補正の無効化
     act.go_straight(blockDistance1,dist[FRONT_DIRECTION],dist[LEFT_DIRECTION],dist[RIGHT_DIRECTION])
     while act.is_running():
         dist = rcg.get_distance()
-        dist[FRONT_DIRECTION] = -1
+        dist[FRONT_DIRECTION] = -1  # 前方向補正の無効化
         act.keep_order(dist[FRONT_DIRECTION],dist[LEFT_DIRECTION],dist[RIGHT_DIRECTION])
+    stop.stop()
     
     # 回転
     act.rotate(degreeAngle)
     while act.is_running():
         act.keep_order(-1,-1,-1)
+    stop.stop()
     
     # 直進2
     dist = rcg.get_distance()
-    dist[FRONT_DIRECTION] = -1
+    dist[FRONT_DIRECTION] = -1  # 前方向補正の無効化
     act.go_straight(blockDistance2,dist[FRONT_DIRECTION],dist[LEFT_DIRECTION],dist[RIGHT_DIRECTION])
     while act.is_running():
         dist = rcg.get_distance()
-        dist[FRONT_DIRECTION] = -1
+        dist[FRONT_DIRECTION] = -1  # 前方向補正の無効化
         act.keep_order(dist[FRONT_DIRECTION],dist[LEFT_DIRECTION],dist[RIGHT_DIRECTION])
+    stop.stop()
 
 
 def calcDistanceRotateAngle(presentPosition, nextPosition, presentDirection):
     '''
-    移動距離と回転角度算出関数
+    移動距離と回転角度，回転後方向算出関数
     入力:現在座標，移動先座標，現在方向
     出力:移動距離[block]，回転角度[degree]，回転後方向
     '''
     xDist = nextPosition[0] - presentPosition[0]
     yDist = nextPosition[1] - presentPosition[1]
-
+    
     (distance,rotateAngle,nextDirection) = (False,False,False)
     if (xDist != 0) and (yDist != 0):
         print "An error occurs in calcDistanceRotateAngle function"
@@ -496,5 +529,7 @@ def calcDistanceRotateAngle(presentPosition, nextPosition, presentDirection):
     return (distance,rotateAngle,nextDirection)
 
 
+#-----------------------------------------------------------------------------#
+#-----------------------------------------------------------------------------#
 if __name__ == '__main__':
     main()
