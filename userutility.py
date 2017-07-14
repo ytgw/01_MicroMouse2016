@@ -111,25 +111,28 @@ class Maze:
         print tempinfo
     def adachi( self ):
         # 足立法で各マスの距離情報を取得する
-        step = self.minstep
+        step = self.minstep     # minstep = 1
         flag = True
-        self.distinfo = np.array( [ [ 255 ] * self.N ] * self.N )
-        self.distinfo[ route[ POS_X ] ][ route[ POS_Y ] ] = 1
+        self.distinfo = np.array( [ [ 255 ] * self.N ] * self.N )   # 距離最大値255で初期化
+        self.distinfo[ route[ POS_X ] ][ route[ POS_Y ] ] = 1       # ゴール直前座標の距離は1で初期化
         # ゴール地点からスタート地点までの距離を求めたら処理をやめる
         while flag == True:
             # 歩数マップの更新がある限り処理を続ける
             flag = False
-            for x in range( self.N ):
-                for y in range( self.N ):
-                    if self.distinfo[ x ][ y ] == step:
-                        cntr =( x , y )
-                        nghbrs = self.neighbor_pos( cntr )[ 0 ]
+            for x in range( self.N ):       # xはx座標の値
+                for y in range( self.N ):   # yはy座標の値
+                    if self.distinfo[ x ][ y ] == step:     # (x，y)がゴール直是座標の場合(step = 1)
+                        cntr =( x , y )     # cntrは注目座標
+                        nghbrs = self.neighbor_pos( cntr )[ 0 ]     # 東側の隣接座標
                         # 上下左右マスの歩数マップを更新
-                        for dr in range( len( DIRECTION ) ):
+                        for dr in range( len( DIRECTION ) ):    # DIRECTION = [ RIGHT, TOP, LEFT, BOTTOM ]
                             if (self.wallinfo[ cntr[ POS_X ] ][cntr[ POS_Y ] ] & DIRECTION[ dr ] ) != DIRECTION[ dr ]:
+                                # 注目座標cntrのdr方向の壁がないとき
                                 if self.distinfo[ nghbrs[ dr ][ POS_X ] ][ nghbrs[ dr ][ POS_Y ] ] > self.distinfo[ cntr[ POS_X ] ][ cntr[ POS_Y ] ]:
+                                    # dr方向の隣接座標の距離が，注目座標cntrの距離より大きい場合(distinfo is N*N matrix)
                                     self.distinfo[ nghbrs[ dr ][ POS_X ] ][ nghbrs[ dr ][ POS_Y ] ] = 1 + self.distinfo[ cntr[ POS_X ] ][ cntr[ POS_Y ] ]
-                                    flag = True
+                                    # dr方向の隣接座標の距離に注目座標cntrの距+1を代入
+                                    flag = True     # 距離更新がなくなるまでwhile loop
             step += 1
     def adachi_2nd_run( self ):
         # 足立法で各マスの距離情報を取得する
@@ -149,7 +152,9 @@ class Maze:
                         # 上下左右マスの歩数マップを更新
                         for dr in range( len( DIRECTION ) ):
                             if (self.wallinfo[ cntr[ POS_X ] ][ cntr[ POS_Y ] ] & DIRECTION[ dr ] ) != DIRECTION[ dr ]:
-                                if ( ( self.wallinfo[ cntr[ POS_X ] ][ cntr[ POS_Y ] ] & SERCH_COMPLETE ) == ( SERCH_COMPLETE )  ) and ( self.distinfo[ nghbrs[ dr ][ POS_X ] ][ nghbrs[ dr ][ POS_Y ] ] > self.distinfo[ cntr[ POS_X ] ][ cntr[ POS_Y ] ] ):
+                                if ( ( self.wallinfo[ nghbrs[ dr ][ POS_X ] ][ nghbrs[ dr ][ POS_Y ] ] & SERCH_COMPLETE ) == ( SERCH_COMPLETE )  )\
+                                and ( self.distinfo[ nghbrs[ dr ][ POS_X ] ][ nghbrs[ dr ][ POS_Y ] ] > self.distinfo[ cntr[ POS_X ] ][ cntr[ POS_Y ] ] ):
+                                    # dr方向の隣接座標の壁情報が探索済みの場合　かつ　adachiの条件を満たす場合
                                     self.distinfo[ nghbrs[ dr ][ POS_X ] ][ nghbrs[ dr ][ POS_Y ] ] = 1 + self.distinfo[ cntr[ POS_X ] ][ cntr[ POS_Y ] ]
                                     flag = True
             step += 1
@@ -187,10 +192,10 @@ class Maze:
                 nextpos = mypos
                 break
             else:
-                self.n_dist[ i ] = self.distinfo[ nghbrs[ i ][ POS_X ] ][ nghbrs[ i ][ POS_Y ] ]
+                self.n_dist[ i ] = self.distinfo[ nghbrs[ i ][ POS_X ] ][ nghbrs[ i ][ POS_Y ] ]    # n_dist = [ 0, 0, 0, 0 ]
                 #print "i=",i
                 #print "DIRECTION=",DIRECTION[ i ]
-                if ( nowwall & DIRECTION[ i ] ) == DIRECTION[ i ]:
+                if ( nowwall & DIRECTION[ i ] ) == DIRECTION[ i ]:  # DIRECTION = [ RIGHT, TOP, LEFT, BOTTOM ]
                     # 壁がある場合はその方向に進まないようにする
                     # ( min関数でindexが選ばれないようにするために255を代入 )
                     self.n_dist[ i ] = 255
@@ -205,7 +210,6 @@ class Maze:
         return nextpos
     def get_nextaction( self, mypos, nextpos ):
         # 次に進むべき方向を決める
-        mydirection = self.direction
         next_x = nextpos[ POS_X ] - mypos[ POS_X ]
         next_y = nextpos[ POS_Y ] - mypos[ POS_Y ]
         if ( next_x == 0 ) and ( next_y == 0 ):
