@@ -9,9 +9,9 @@ sensor_driver  = "/dev/rtlightsensor0"
 switch_driver  = [ "/dev/rtswitch0", "/dev/rtswitch1", "/dev/rtswitch2"]
 buzzer_driver  = "/dev/rtbuzzer0"
 motor_driver   = [ "/dev/rtmotor_raw_l0", "/dev/rtmotor_raw_r0"]
-led_driver     = [ "/dev/rtled0", "/dev/rtled1", "/dev/rtled2", "/dev/rtled3"] 
+led_driver     = [ "/dev/rtled0", "/dev/rtled1", "/dev/rtled2", "/dev/rtled3"]
 # デバイスドライバから取得した値を格納するリスト
-sensor_info  = [ 0, 0, 0, 0 ] # [ 距離センサー0の取得値, 1の値, 2の値, 3の値 ]  
+sensor_info  = [ 0, 0, 0, 0 ] # [ 距離センサー0の取得値, 1の値, 2の値, 3の値 ]
 switch_state = [ 0, 0, 0 ]    # [ タクトスイッチ0の取得値, 1の値, 2の値 ]
 
 #-----------------------------------------------------------------------------#
@@ -43,7 +43,7 @@ def sensorinfo():
     except:
         # エラー発生時は全ての要素に数値の255を代入する
         info = [ 255, 255, 255, 255 ]
-    sensor_info = info 
+    sensor_info = info
     return sensor_info
 
 def switchstate():
@@ -54,9 +54,9 @@ def switchstate():
     　デバイスドライバにアクセスできなかった場合 => exceptの処理
     　（正確には、tryの処理中にエラーが発生した場合にexceptの処理が実行される）
     入力：
-　　　なし
+    　なし
     出力：
-　　　タクトスイッチ0～2の値を格納したリスト
+    　タクトスイッチ0～2の値を格納したリスト
     '''
     state = [ 0, 0, 0 ]
     try:
@@ -87,8 +87,8 @@ def buzzer( frequency ):
     入力：
     　ブザー音の周波数(Hz)
     出力：
-    　正常にブザー音がなった 　=> 返値 True
-    　ブザー音がならせなかった => 返値 False
+    　正常にブザー音がなった => 返値 True
+    　ブザー音がならなかった => 返値 False
     '''
     try:
         filename = buzzer_driver
@@ -139,7 +139,7 @@ def led( led_state ):
     '''
     try:
         for i,filename in enumerate( led_driver ):
-            with open( filename, 'w' ) as f: 
+            with open( filename, 'w' ) as f:
                 f.write( str( led_state[i] ) )
         ret = True
     except:
