@@ -17,6 +17,11 @@ if [ "$_IP" ]; then
   printf "My IP address is %s\n" "$_IP"
 fi
 
+# sleep order is for driver install at the end
+sleep 1m
+# install driver for MicroMouse
 bash /home/pi/Desktop/ShellScript/driverinstall.sh
+# run python code for MicroMouse
+python /home/pi/Desktop/MicroMouse/run/sequence.py &
 
 exit 0
