@@ -1,0 +1,20 @@
+# check driver install
+ls /dev/rt*
+
+# check running job whose name contains foo
+ps aux | grep foo
+
+# kill job whose process ID is xxx
+kill xxx
+
+本番はRaspberryPiの設定を以下のようにする．
+・ブートをデスクトップでなくCLIに
+・自動ログインを無効に
+この設定をすると，rc.localにスリープ処理を入れずにデバイスドライバインストールとpythonスクリプト実行が可能．
+
+デバイスドライバ関連の雑記
+ディスプレイをつけるとデバイスドライバのインストールがうまくいく．
+つけないとうまくいかないことが判明．
+うまくいかないのはブザーとモーター出力のみ．
+LEDと光センサとタクトスイッチ入力はうまくいく．
+毎回ドライバインストールもやめたい．
