@@ -53,11 +53,44 @@ global_mode = GLOBAL_STOP_MODE  # 動作状態(停止，直進，回転)
 # LED出力関数とブザー出力関数
 #--------------------------------------------------------------#
 def led(led_state):
+    '''
+    LED出力関数
+    入力：
+    　led_state = [ led_0, led_1, led_2,led_3 ]
+    　( "led_X = 0" => Off , "led_X = 1" => ON )
+    出力：
+    　正常にLEDを駆動できた => 返値 True
+    　LEDを駆動できなかった => 返値 False
+    '''
     error_state = mw.led(led_state)
     return error_state
 
 def buzzer(frequency):
+    '''
+    ブザー出力関数
+    入力：
+    　ブザー音の周波数(Hz)
+    出力：
+    　正常にブザー音がなった => 返値 True
+    　ブザー音がならなかった => 返値 False
+    '''
     error_state = mw.buzzer(frequency)
+    return error_state
+
+def buzzerWithTime(frequency,sleepTime):
+    '''
+    ブザー出力関数
+    入力：
+    　ブザー音の周波数(Hz)
+    　ブザー音の鳴動時間(sec)
+    出力：
+    　正常にブザー音がなった => 返値 True
+    　ブザー音がならなかった => 返値 False
+    '''
+    error_state1 = mw.buzzer(frequency)
+    time.sleep(sleepTime)
+    error_state2 = mw.buzzer(0)
+    error_state = error_state1 & error_state2
     return error_state
 
 #--------------------------------------------------------------#
@@ -75,7 +108,7 @@ def go_straight(block_distance,length_F,length_L,length_R):
     global global_distance, global_distance_order
     global global_old_length_L, global_old_length_R
     global global_is_running, global_mode
-    
+
     if global_mode == GLOBAL_STOP_MODE:
         # 停止時呼び出しの処理
         global_time_for_straight = 0
@@ -86,7 +119,7 @@ def go_straight(block_distance,length_F,length_L,length_R):
         global_is_running = True
         global_mode = GLOBAL_STRAIGHT_MODE
         control_input = 0
-        
+
     elif global_mode == GLOBAL_STRAIGHT_MODE:
         # 直進状態時呼び出しの処理
         #----------------------#
@@ -113,7 +146,7 @@ def go_straight(block_distance,length_F,length_L,length_R):
         # 速度指令の算出
         #----------------------#
         # 残り距離の算出
-        residual_distance = global_distance_order - global_distance        
+        residual_distance = global_distance_order - global_distance
         # 台形加速の実装
         global_speed = ramp_speed_control(global_time_for_straight,global_speed,residual_distance,GLOBAL_ACCEL)
         if global_speed < 0:
@@ -154,7 +187,7 @@ def go_straight(block_distance,length_F,length_L,length_R):
     right_Hz = speed_2_frequency( global_speed + control_input )
     # モータ出力
     mw.motor([left_Hz, right_Hz])
-    
+
     return global_is_running
 
 #--------------------------------------------------------------#
@@ -182,7 +215,7 @@ def rotate(degree_angle):
         global_angle_order = math.radians(degree_angle)
         global_is_running = True
         global_mode = GLOBAL_ROTATE_MODE
-        
+
     elif global_mode == GLOBAL_ROTATE_MODE:
         # 回転状態時呼び出しの処理
         #----------------------#
@@ -195,7 +228,7 @@ def rotate(degree_angle):
         # 角度の更新
         angle_increment = global_rotation_speed * time_increment
         global_angle += angle_increment
-        
+
         #----------------------#
         # 速度指令の算出
         #----------------------#
@@ -236,7 +269,7 @@ def rotate(degree_angle):
     #----------------------#
     frequency = speed_2_frequency(speed)
     mw.motor([-frequency, frequency])
-        
+
     return global_is_running
 
 #--------------------------------------------------------------#
@@ -291,7 +324,7 @@ def ramp_speed_control(time,speed,residual_distance,accel):
         # 減速
         speed_square = math.fabs(2*accel*residual_distance)
         return_speed = np.sign(residual_distance) * math.sqrt(speed_square)
-        
+
     return return_speed
 
 #--------------------------------------------------------------#
@@ -304,14 +337,14 @@ def correct_F(speed,length_F):
     REFERENCE_F = 2e-2  # [m] 前センサの参照値
     THRESHOLD_F = 5e-2  # [m] 前センサの閾値
     KpF = 1.5           # 比例制御の定数
-    
+
     if (length_F != ERROR) and (length_F < THRESHOLD_F):
         # 壁が近い時
         return_speed = KpF * (length_F - REFERENCE_F)
     else:
         # 壁が遠い時
         return_speed = speed
-    
+
     return return_speed
 
 #--------------------------------------------------------------#
@@ -329,7 +362,7 @@ def correct_LR(length_L,length_R,diff_L,diff_R):
     THRESHOLD_DIFF_R = 5e-2     # [m/m] 右センサの直進距離変化に対する左右距離変化量の閾値
     KpLR = 0.4                  # 比例制御の定数
     MAXIMUM_RL_ERROR = 8e-2
-    
+
     l_error = length_L-REFERENCE_L
     r_error = length_R-REFERENCE_R
     is_L_good = (length_L != ERROR) and (length_L < THRESHOLD_L) and (diff_L < THRESHOLD_DIFF_L)
@@ -342,7 +375,7 @@ def correct_LR(length_L,length_R,diff_L,diff_R):
         rl_error = -2.5*r_error
     else:
         rl_error = 0
-        
+
     if math.fabs(rl_error) > MAXIMUM_RL_ERROR:
         rl_error = np.sign(rl_error) * MAXIMUM_RL_ERROR
 
@@ -358,6 +391,5 @@ def speed_2_frequency(speed):
     tire_radius = GLOBAL_TIRE_DIAMETER/2.0
     omega = speed/tire_radius
     return_frequency = FREQUENCY * omega / (2*math.pi)
-        
-    return return_frequency
 
+    return return_frequency
