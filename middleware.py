@@ -1,4 +1,5 @@
 # coding: UTF-8
+import time
 
 #-----------------------------------------------------------------------------#
 # Declation                                                                  #
@@ -146,3 +147,16 @@ def led( led_state ):
         # エラー発生時は返値としてFalseを返す
         ret = False
     return ret
+
+if __name__ == '__main__':
+    while True:
+        sValue = sensorinfo()
+        ledOnOff = [0,0,0,0]
+
+        for i,x in enumerate(sValue):
+            if x > 100:
+                ledOnOff[i] = 1
+
+        led(ledOnOff)
+        print sValue
+        time.sleep(1)
