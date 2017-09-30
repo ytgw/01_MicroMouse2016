@@ -1,20 +1,35 @@
+■起動設定
+本番はRaspberryPiの設定を以下のようにする．
+・ブートをデスクトップでなくCLIに
+・自動ログインを無効に
+この設定をすると，rc.localにスリープ処理を入れずにデバイスドライバインストールとpythonスクリプト実行が可能．
+
+■デバイスドライバ
+上記設定をせずに，起動時にデバイスドライバをインストールする場合のメモ
+ディスプレイをつけるとデバイスドライバのインストールがうまくいくが，つけないとうまくいかないことが判明．
+うまくいかないのはブザーとモーター出力のみで，LEDと光センサとタクトスイッチ入力はうまくいく．
 # check driver install
 ls /dev/rt*
 
+■JOB終了
 # check running job whose name contains foo
 ps aux | grep foo
 
 # kill job whose process ID is xxx
 kill xxx
 
-本番はRaspberryPiの設定を以下のようにする．
-・ブートをデスクトップでなくCLIに
-・自動ログインを無効に
-この設定をすると，rc.localにスリープ処理を入れずにデバイスドライバインストールとpythonスクリプト実行が可能．
-
-デバイスドライバ関連の雑記
-ディスプレイをつけるとデバイスドライバのインストールがうまくいく．
-つけないとうまくいかないことが判明．
-うまくいかないのはブザーとモーター出力のみ．
-LEDと光センサとタクトスイッチ入力はうまくいく．
-毎回ドライバインストールもやめたい．
+■空き容量不足について
+SDカードの容量がいっぱいの場合，GUIログインできなくなる．
+解決するには以下の手順が必要．
+1．GUIログイン画面で，Ctrl+Alt+F1でCUIにログイン
+2．sudo df -hで空き容量を確認　→　使用率が100%近くになっていたら容量オーバーが原因
+3．sudo du -sh foo
+	fooディレクトリ内で容量を食っているファイルorディレクトリを探す
+	→　おそらく/var/logディレクトリ内の，kern.log messages syslogの3つが原因
+4．容量が多いファイルを削除　→　logファイルなどはrmコマンドで削除できない場合があるので以下の手順で
+	sudo mv foo foo.oldでリネーム
+	sudo shutdown -r nowで再起動
+	lsでfooとfoo.oldの確認
+	sudo rm foo.oldで削除
+5．sudo df -hで空き容量が増えているか確認
+※sudo apt-get autoremoveやsudo apt-get cleanなどでも空き容量を増加可能
