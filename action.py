@@ -1,9 +1,7 @@
 # -*- coding: utf-8 -*-
 '''
 ファイル action.py の概要
-直進走行関数go_straight，回転走行関数rotate，
-命令維持関数keep_order，動作有無取得関数is_runningを実装
-それぞれの入出力は各関数のコメントを参照のこと
+マシン出力系の関数を実装
 '''
 
 import time
@@ -46,6 +44,7 @@ global_old_length_R = 0         # [m] 前回の右壁までの距離
 
 global_is_running = False       # 動作フラグ(動作中はTrue，停止中はFalse)
 global_mode = GLOBAL_STOP_MODE  # 動作状態(停止，直進，回転)
+
 
 #--------------------------------------------------------------#
 # LED出力関数とブザー出力関数
@@ -113,6 +112,9 @@ def rotateUntilLast(angleOrder):
     return resAngle
 
 
+#--------------------------------------------------------------#
+# 直進走行開始関数
+#--------------------------------------------------------------#
 def startStraight(distOrder):
     '''
     直進走行開始関数の概要
@@ -133,6 +135,9 @@ def startStraight(distOrder):
     return resDist
 
 
+#--------------------------------------------------------------#
+# 直進走行
+#--------------------------------------------------------------#
 def addDistanceOrder(addDist):
     '''
     直進命令距離追加関数の概要
@@ -149,6 +154,9 @@ def addDistanceOrder(addDist):
     return resDist
 
 
+#--------------------------------------------------------------#
+# 直進命令維持関数
+#--------------------------------------------------------------#
 def keepStraight(distF,distL,distR):
     '''
     直進命令維持関数の概要
@@ -199,6 +207,7 @@ def go_straight(block_distance,length_F,length_L,length_R):
         # 情報の更新
         #----------------------#
         # 時間の更新
+        # time.timeは一度だけで済ませられないか検討したい
         time_increment = time.time() - global_old_time_for_straight
         global_old_time_for_straight = time.time()
         global_time_for_straight += time_increment
@@ -244,12 +253,13 @@ def go_straight(block_distance,length_F,length_L,length_R):
     # モータ指令の算出
     #----------------------#
     # モータ周波数への変換
-    left_Hz = speed_2_frequency( global_speed - control_input )
+    left_Hz  = speed_2_frequency( global_speed - control_input )
     right_Hz = speed_2_frequency( global_speed + control_input )
     # モータ出力
     mw.motor([left_Hz, right_Hz])
 
     return global_is_running
+
 
 #--------------------------------------------------------------#
 # 回転走行関数
@@ -321,24 +331,6 @@ def rotate(degree_angle):
 
     return global_is_running
 
-#--------------------------------------------------------------#
-# 命令維持関数
-#--------------------------------------------------------------#
-def keep_order(length_F,length_L,length_R):
-    '''
-    命令維持関数keep_orderの概要
-    入力:前壁までの距離，左壁までの距離，右壁までの距離
-    出力:動作状態(停止，直進，回転)
-    '''
-    if global_is_running:
-        if global_mode == GLOBAL_STRAIGHT_MODE:
-            go_straight(0,length_F,length_L,length_R)
-        elif global_mode == GLOBAL_ROTATE_MODE:
-            rotate(0)
-    else:
-        mw.motor([0,0])
-
-    return global_mode
 
 #--------------------------------------------------------------#
 # 動作有無取得関数
@@ -400,6 +392,7 @@ def ramp_speed_control_old(time,speed,residual_distance,accel):
 
     return return_speed
 
+
 #--------------------------------------------------------------#
 # 直進方向補正関数
 #--------------------------------------------------------------#
@@ -419,6 +412,7 @@ def correct_F(speed,length_F):
         return_speed = speed
 
     return return_speed
+
 
 #--------------------------------------------------------------#
 # 左右方向補正関数
@@ -456,6 +450,7 @@ def correct_LR(length_L,length_R,diff_L,diff_R):
 
     control_input = KpLR * rl_error
     return control_input
+
 
 #--------------------------------------------------------------#
 # 速度[m/s]→モータ入力周波数[Hz]変換関数

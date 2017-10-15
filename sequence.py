@@ -23,13 +23,6 @@ import os
 #-----------------------------------------------------------------------------#
 # Declation                                                                   #
 #-----------------------------------------------------------------------------#
-# グローバル定数
-# 壁情報のビット表現
-RIGHT  = 0b00000001
-TOP    = 0b00000010
-LEFT   = 0b00000100
-BOTTOM = 0b00001000
-
 # グローバル変数
 global_maze      = utl.Maze()                   # 迷路インスタンス
 global_position  = common.INITIAL_POSITION      # 現在座標
@@ -156,26 +149,25 @@ def moveModeFunction(mode):
     入力:探索状態or最速走行状態
     '''
     global global_maze, global_position, global_direction, global_onoff
-    HALF_DISTANCE = 0.55     # [block]
-    ZERO_DISTANCE = 0       # [block]
+    RESIDUAL_DISTANCE = 0.55    # [block]
+    ZERO_DISTANCE = 0           # [block]
 
     if global_position == common.INITIAL_POSITION:
         global_direction = common.INITIAL_DIRECTION
         wallInfoFromRcg  = common.INITIAL_WALL_INFO
-        # 現在座標と方向を表示
-        # printPositionDirection(global_position, global_direction)
-        # 1block直進
+        # 1block直進し[0,1]に移動
         act.startStraight(1)
         global_position = (0,1)
 
     #----- 区画の境界まで直進 -----#
-    keepStraightUntilThreshold(HALF_DISTANCE)
+    keepStraightUntilThreshold(RESIDUAL_DISTANCE)
 
 
     #----- 足立法からの情報取得 -----#
     print "Present",
     printPositionDirection(global_position, global_direction)
-    # 壁情報の取得
+
+    # 壁情報の取得は探索状態のみ
     if mode == common.SEARCH_MODE:
         wallInfoFromRcg  = rcg.check_wall_info()
         wallForPrint = (wallInfoFromRcg[common.LEFT], wallInfoFromRcg[common.FRONT], wallInfoFromRcg[common.RIGHT])
@@ -188,7 +180,6 @@ def moveModeFunction(mode):
     (global_position, global_direction, nextAngle, nextDist) \
     = global_maze.get_next_info(global_position, global_direction, mode)
     print "(Next Angle, Next Distance) : ", (nextAngle, nextDist)
-
     print "Next",
     printPositionDirection(global_position, global_direction)
 
@@ -196,7 +187,7 @@ def moveModeFunction(mode):
     if nextAngle != 0:
         # 区画中心まで直進
         # print "before keepStraightUntilThreshold"
-        # kokode boso kamo
+        # keepStraightUntilThresholdで暴走する時がある
         keepStraightUntilThreshold(ZERO_DISTANCE)
         # print "after keepStraightUntilThreshold"
         # 回転動作
@@ -216,10 +207,12 @@ def moveModeFunction(mode):
         global_maze.display_wallinfo()
         print "You reached goal"
 
-    # 現在座標と方向を表示
-    # printPositionDirection(global_position, global_direction)
 
 def keepStraightUntilThreshold(threshold):
+    '''
+    指定の残り距離以下になるまで直進する関数
+    入力:残り距離
+    '''
     length = rcg.get_distance()     # 距離センサ情報の取得
     length[common.FRONT] = -1       # 前方向補正の無効化
     resDist = act.keepStraight(length[common.FRONT],length[common.LEFT],length[common.RIGHT])
@@ -232,12 +225,12 @@ def keepStraightUntilThreshold(threshold):
             length[common.FRONT] = -1       # 前方向補正の無効化
             resDist = act.keepStraight(length[common.FRONT],length[common.LEFT],length[common.RIGHT])
             # if minResDist > resDist:
-            #     minResDist = resDist
+                # minResDist = resDist
             # if maxDistance < act.global_distance:
-            #     maxDistance = act.global_distance
-            #     print "order : %d [cm]" % (100*act.global_distance_order), " / maxDistance : %d [cm]" % (100*maxDistance)
+                # maxDistance = act.global_distance
+                # print "order : %d [cm]" % (100*act.global_distance_order), " / maxDistance : %d [cm]" % (100*maxDistance)
         # print "minResDist %.1f [block]" % minResDist
-        # distance no kosin ga okashii
+        # distanceの更新値がおかしくて暴走する時がある
     else:
         while resDist > threshold:
             length = rcg.get_distance()     # 距離センサ情報の取得

@@ -1,8 +1,9 @@
 # coding: UTF-8
 import time
 import numpy as np
+
 #-----------------------------------------------------------------------------#
-# Declation                                                                  #
+# Declation
 #-----------------------------------------------------------------------------#
 
 # 各デバイスドライバのパス
@@ -16,7 +17,7 @@ sensor_info  = [ 0, 0, 0, 0 ] # [ 距離センサー0の取得値, 1の値, 2の
 switch_state = [ 0, 0, 0 ]    # [ タクトスイッチ0の取得値, 1の値, 2の値 ]
 
 #-----------------------------------------------------------------------------#
-# Input system (入力系)                                                       #
+# Input system (入力系)
 #-----------------------------------------------------------------------------#
 
 def sensorinfo():
@@ -75,7 +76,7 @@ def switchstate():
     return switch_state
 
 #-----------------------------------------------------------------------------#
-# Output system (出力系)                                                       #
+# Output system (出力系)
 #-----------------------------------------------------------------------------#
 
 def buzzer( frequency ):
@@ -122,9 +123,6 @@ def motor( speed ):
     except:
         # エラー発生時は返値としてFalseを返す
         ret = False
-    if ret == False:
-        print "---------------------mw.motor : ", ret
-    # print ret
     return ret
 
 def led( led_state ):
@@ -163,7 +161,7 @@ if __name__ == '__main__':
             list1.append(aValue[1])
             list2.append(aValue[2])
             list3.append(aValue[3])
-            
+
         print "list0Mid : ", np.median(list0)
         print "list1Mid : ", np.median(list1)
         print "list2Mid : ", np.median(list2)

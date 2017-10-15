@@ -6,7 +6,7 @@ from matplotlib import pyplot as plt
 import copy
 
 #-----------------------------------------------------------------------------#
-# Declation                                                                   #
+# Declation
 #-----------------------------------------------------------------------------#
 POS_X = 0
 POS_Y = 1
@@ -18,7 +18,7 @@ DATA_PATH = "maze_simulator/data.txt"
 #DATA_PATH = "data.txt"
 
 #-----------------------------------------------------------------------------#
-# Class                                                                       #
+# Class
 #-----------------------------------------------------------------------------#
 class MazeSim:
     def __init__( self ):
@@ -81,4 +81,3 @@ if __name__ == '__main__':
         mypos[0] += i
         mypos[1] -= i
         m.display_maze( info, mypos)
-
