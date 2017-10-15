@@ -14,7 +14,7 @@ RIGHT  = 0b00000001
 TOP    = 0b00000010
 LEFT   = 0b00000100
 BOTTOM = 0b00001000
-DATA_PATH = "maze_simulator\data.txt"
+DATA_PATH = "maze_simulator/data.txt"
 #DATA_PATH = "data.txt"
 
 #-----------------------------------------------------------------------------#

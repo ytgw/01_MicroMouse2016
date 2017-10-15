@@ -1,6 +1,6 @@
 # coding: UTF-8
 import time
-
+import numpy as np
 #-----------------------------------------------------------------------------#
 # Declation                                                                  #
 #-----------------------------------------------------------------------------#
@@ -122,6 +122,9 @@ def motor( speed ):
     except:
         # エラー発生時は返値としてFalseを返す
         ret = False
+    if ret == False:
+        print "---------------------mw.motor : ", ret
+    # print ret
     return ret
 
 def led( led_state ):
@@ -150,13 +153,19 @@ def led( led_state ):
 
 if __name__ == '__main__':
     while True:
-        sValue = sensorinfo()
-        ledOnOff = [0,0,0,0]
-
-        for i,x in enumerate(sValue):
-            if x > 100:
-                ledOnOff[i] = 1
-
-        led(ledOnOff)
-        print sValue
+        list0 = []
+        list1 = []
+        list2 = []
+        list3 = []
+        for i in range(0,30):
+            aValue = sensorinfo()
+            list0.append(aValue[0])
+            list1.append(aValue[1])
+            list2.append(aValue[2])
+            list3.append(aValue[3])
+            
+        print "list0Mid : ", np.median(list0)
+        print "list1Mid : ", np.median(list1)
+        print "list2Mid : ", np.median(list2)
+        print "list3Mid : ", np.median(list3)
         time.sleep(1)

@@ -4,6 +4,7 @@ import time
 import math 
 import numpy as np
 import middleware as mw
+import common
 
 #-----------------------------------------------------------------------------#
 # Declataion                                                                  #
@@ -22,9 +23,8 @@ RIGHT_NEAR_THRESHOLD    = 0.01      # 閾値(右方)
 
 # 壁距離換算の閾値[m]
 F_NO_CHECK_F_MAX_THRESHOLD = 0.18   # 前判定不可領域閾値(前方)
-##LR_NO_CHECK_LR_MAX_THRESHOLD = 0.06 # 左右判定不可領域閾値(左右)
 LR_NO_CHECK_LR_MAX_THRESHOLD = 0.07 # 左右判定不可領域閾値(左右)
-LR_NO_CHECK_F_MIN_THRESHOLD = 0.05  # 左右判定不可領域閾値(前方)
+LR_NO_CHECK_F_MIN_THRESHOLD = 0.04  # 左右判定不可領域閾値(前方)
 
 # 判定結果
 WALL_OFF = 0                        # 壁あり
@@ -66,77 +66,22 @@ GET_SENSOR_NUM  = 10                # センサ値取得回数
 #-----------------------------------------------------------------------------#
 # Function                                                                    #
 #-----------------------------------------------------------------------------#
-def check_wall_front():
-    """ 前方に壁があるかどうかチェックする
-    """
+def check_wall_info():
     # 初期化
-    distance = [0, 0, 0]
+    distance  = [0, 0, 0]
+    wall_info = [0, 0, 0]
     # 距離取得
     distance = get_distance()
     # 壁ありなし判定
-    if distance[FRONT_DIRECTION] < FRONT_THRESHOLD and distance[FRONT_DIRECTION] >= 0:
-        return WALL_ON  # 壁あり
-    else:
-        return WALL_OFF # 壁なし
-
-def check_wall_left():
-    """ 左方に壁があるかどうかチェックする
-    """
-    # 初期化
-    distance = [0, 0, 0]
-    # 距離取得
-    distance = get_distance()
-    # 壁ありなし判定
-    if distance[LEFT_DIRECTION] < LEFT_THRESHOLD and distance[LEFT_DIRECTION] >= 0:
-        return WALL_ON  # 壁あり
-    else:
-        return WALL_OFF # 壁なし
-
-def check_wall_right():
-    """ 右方に壁があるかどうかチェックする
-    """
-    # 初期化
-    distance = [0, 0, 0]
-    # 距離取得
-    distance = get_distance()
-    # 壁ありなし判定
-    if distance[RIGHT_DIRECTION] < RIGHT_THRESHOLD and distance[RIGHT_DIRECTION] >= 0:
-        return WALL_ON  # 壁あり
-    else:
-        return WALL_OFF # 壁なし
-
-def check_wall():
-    """ 壁があるかどうかチェックする
-    """
-    # 初期化
-    distance = [0, 0, 0]
-    wall = 0
-    # 距離取得
-    distance = get_distance()
-    # 壁ありなし判定
-    if distance[FRONT_DIRECTION] < FRONT_THRESHOLD and distance[FRONT_DIRECTION] >= 0:
-        wall |= TOP_BIT
-    if distance[RIGHT_DIRECTION] < RIGHT_THRESHOLD and distance[RIGHT_DIRECTION] >= 0:
-        wall |= RIGHT_BIT
-    if distance[LEFT_DIRECTION] < LEFT_THRESHOLD and distance[LEFT_DIRECTION] >= 0:
-        wall |= LEFT_BIT
-    return wall         
-
-def check_wall_near():
-    """ 左右壁の接近チェックする
-    """
-    # 初期化
-    distance = [0, 0, 0]
-    # 距離取得
-    distance = get_distance()
-    # 壁接近判定
-    if distance[LEFT_DIRECTION] < LEFT_NEAR_THRESHOLD:
-        return WALL_LEFT_NEAR
-    elif distance[RIGHT_DIRECTION] < RIGHT_NEAR_THRESHOLD:
-        return WALL_RIGHT_NEAR
-    else:
-        return WALL_NO_NEAR
-
+    if distance[common.FRONT] < FRONT_THRESHOLD and distance[common.FRONT] >= 0:
+        wall_info[common.FRONT] = 1
+    if distance[common.RIGHT] < RIGHT_THRESHOLD and distance[common.RIGHT] >= 0:
+        wall_info[common.RIGHT] = 1
+    if distance[common.LEFT] < LEFT_THRESHOLD and distance[common.LEFT] >= 0:
+        wall_info[common.LEFT] = 1
+    # print "distance from rcg.check_wall_info:",  tuple(distance)
+    return wall_info
+    
 def get_distance():
     """ 距離[m]を取得
     """
@@ -144,12 +89,11 @@ def get_distance():
     distance = [0, 0, 0]
     sensor_value = get_sensor_value()
     # センサ値->距離
-##    distance[FRONT_DIRECTION] = (-5.538*math.log(sensor_value[FRONT_DIRECTION])+43.786) / 100
-    distance[FRONT_DIRECTION] = (-0.078*math.log(sensor_value[FRONT_DIRECTION])+0.5292) 
-##    distance[LEFT_DIRECTION] = (1e-5*sensor_value[LEFT_DIRECTION]**2-0.0173*sensor_value[LEFT_DIRECTION]+8.5815) / 100
-    distance[LEFT_DIRECTION] = (-0.043*math.log(sensor_value[LEFT_DIRECTION])+0.2976)
-##    distance[RIGHT_DIRECTION] = (4e-6*sensor_value[RIGHT_DIRECTION]**2-0.0106*sensor_value[RIGHT_DIRECTION]+8.4801) / 100
-    distance[RIGHT_DIRECTION] = (-0.036*math.log(sensor_value[RIGHT_DIRECTION])+0.2713)
+    distFL = (521.58 * sensor_value[FRONT_L_SENSOR_NO]**(-0.672))/100
+    distFR= (1035.1 * sensor_value[FRONT_R_SENSOR_NO]**(-0.857))/100
+    distance[FRONT_DIRECTION] = (distFL+distFR)/2
+    distance[LEFT_DIRECTION] = (-0.043*math.log(1+sensor_value[LEFT_DIRECTION])+0.2976+1.0e-2)
+    distance[RIGHT_DIRECTION] = (-0.036*math.log(1+sensor_value[RIGHT_DIRECTION])+0.2713-0.2e-2)
     # 左壁の距離検出なし条件
     if distance[LEFT_DIRECTION] > LR_NO_CHECK_LR_MAX_THRESHOLD or distance[FRONT_DIRECTION] <= LR_NO_CHECK_F_MIN_THRESHOLD:
         distance[LEFT_DIRECTION] = -1
@@ -161,14 +105,15 @@ def get_distance():
         distance[FRONT_DIRECTION] = -1
                             
     return distance
-    
+
 def get_sensor_value():
     """ 距離センサより値を取得
     """
     # 初期化
     num = 0
-    sensor_value = [0, 0, 0]
-    f_buf = []
+    sensor_value = [0, 0, 0, 0]
+    fl_buf = []
+    fr_buf = []
     l_buf = []
     r_buf = []
     # 指定回数データ取得
@@ -179,14 +124,16 @@ def get_sensor_value():
             if info[sensor_num] < 0:
                 info[sensor_num] = 0.001
         # バッファに格納
-        f_buf.append((info[FRONT_L_SENSOR_NO]+info[FRONT_R_SENSOR_NO])/2)
+        fl_buf.append(info[FRONT_L_SENSOR_NO])
+        fr_buf.append(info[FRONT_R_SENSOR_NO])
         l_buf.append(info[LEFT_SENSOR_NO])
         r_buf.append(info[RIGHT_SENSOR_NO])
         num += 1;
     # 中央値取得
-    sensor_value[FRONT_DIRECTION] = np.median(f_buf)
-    sensor_value[LEFT_DIRECTION] = np.median(l_buf)
-    sensor_value[RIGHT_DIRECTION] = np.median(r_buf)
+    sensor_value[FRONT_L_SENSOR_NO] = np.median(fl_buf)+1
+    sensor_value[FRONT_R_SENSOR_NO] = np.median(fr_buf)+1
+    sensor_value[LEFT_DIRECTION] = np.median(l_buf)+1
+    sensor_value[RIGHT_DIRECTION] = np.median(r_buf)+1
 
     return sensor_value
 
@@ -259,41 +206,12 @@ def test_recognition():
     else:
         led_state[RIGHT_LED_NO] = LED_OFF
 
-##    while True:
-##        num += 1;
-##        print "----------"
-##        print "LOOP =",num
-##        print "----------"
-##        # センサ値取得
-##        sensor_value = get_sensor_value()
-##        # 距離取得
-##        distance = get_distance()
-##        print "Front =", sensor_value[FRONT_DIRECTION],"|",distance[FRONT_DIRECTION]
-##        print "Left  =", sensor_value[LEFT_DIRECTION],"|",distance[LEFT_DIRECTION]
-##        print "Right =", sensor_value[RIGHT_DIRECTION],"|",distance[RIGHT_DIRECTION]
-##        # LED点灯
-##        led_state[EXEC_LED_NO] = LED_ON
-##        # 前壁チェック(壁あり:LED点灯)
-##        if check_wall_front() == WALL_ON:
-##            led_state[FRONT_LED_NO] = LED_ON
-##        else:
-##            led_state[FRONT_LED_NO] = LED_OFF
-##        # 左壁チェック(壁あり:LED点灯)
-##        if check_wall_left() == WALL_ON:
-##            led_state[LEFT_LED_NO] = LED_ON
-##        else:
-##            led_state[LEFT_LED_NO] = LED_OFF
-##        # 右壁チェック(壁あり:LED点灯)
-##        if check_wall_right() == WALL_ON:
-##            led_state[RIGHT_LED_NO] = LED_ON
-##        else:
-##            led_state[RIGHT_LED_NO] = LED_OFF
-##        print "----------"    
-##        # LED設定
-##        mw.led(led_state)
-##        time.sleep(1)
-
 if __name__ == '__main__':
-    test_recognition()
-    
-
+    while True:
+        print "wall (F, L, R) :",
+        print check_wall_info()
+        # time.sleep(1)
+        sDist = get_distance()
+        sDistForPrint = (100*sDist[common.LEFT], 100*sDist[common.FRONT], 100*sDist[common.RIGHT])
+        print "distance (L,F,R) : (%.2f, %.2f, %.2f) [cm]" % sDistForPrint
+        time.sleep(1)
