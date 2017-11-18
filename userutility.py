@@ -4,7 +4,7 @@ import numpy as np
 import operator
 
 #-----------------------------------------------------------------------------#
-# Declation                                                                   #
+# Declation
 #-----------------------------------------------------------------------------#
 # 壁情報のビット表現
 EAST_BIT      = 0b00001
@@ -15,7 +15,7 @@ SEARCHED_BIT  = 0b10000
 BIT_DIRECTION = [ EAST_BIT, NORTH_BIT, WEST_BIT, SOUTH_BIT ]
 
 #-----------------------------------------------------------------------------#
-# Function                                                                    #
+# Function
 #-----------------------------------------------------------------------------#
 def rev_array( array ):
     # 配列のxy座標を反転した後に、行を逆転させる
@@ -68,12 +68,13 @@ def calc_distance(nextPosition, presentPosition):
     return distance
 
 #-----------------------------------------------------------------------------#
-# Class                                                                       #
+# Class
 #-----------------------------------------------------------------------------#
 # 迷路クラス
 class Maze:
     def __init__( self ):
-        self.N = 16                     # 迷路サイズ = N*N
+        # self.N = 16                     # 迷路サイズ = N*N
+        self.N = 8                     # 迷路サイズ = N*N
         self.MIN_STEP = 0               # ゴール座標の歩数
         self.direction = NORTH_BIT   # 現在の向き
         self.n_dist = [ 0, 0, 0, 0 ]
@@ -89,7 +90,7 @@ class Maze:
 
 
     #-----------------------------------------------------------------------------#
-    # Display Method                                                              #
+    # Display Method
     #-----------------------------------------------------------------------------#
     def display_wallinfo( self ):
         # 地図情報をコマンドラインに表示する
@@ -97,6 +98,8 @@ class Maze:
         tempinfo = rev_array( tempinfo )
         print "wallinfo = "
         print tempinfo  & 0b11101111
+
+
     def display_distinfo( self ):
         # 距離情報をコマンドラインに表示する
         tempinfo = self.distinfo
@@ -104,8 +107,9 @@ class Maze:
         print "distinfo = "
         print tempinfo
 
+
     #-----------------------------------------------------------------------------#
-    # Get Method                                                                  #
+    # Get Method
     #-----------------------------------------------------------------------------#
     def get_next_info( self, position, direction, mode):
         #------ 次座標と次方向の算出 -----#
@@ -117,53 +121,6 @@ class Maze:
 
         return (nextPosition, nextDirection, nextAngle, nextDist)
 
-    def get_next_pos_direction_old( self, position, direction, mode):
-        nghbrs  = self.get_neighbor_pos(position)[0]
-        nowwall = self.wallinfo[ tuple(position) ]
-
-        #------ 次座標の算出 -----#
-        if position in common.GOAL_POSITIONS:
-            # ゴールに到着している場合
-            nextPosition  = position
-        else:
-            # ゴールに未到着の場合
-            # 距離情報の更新
-            self.update_dist_info(mode)
-
-            # 隣接座標のゴールまでの距離
-            nghbrsDist = [255,255,255,255]
-            for i in range(4):
-                nghbrsDist[i] = self.distinfo[ tuple(nghbrs[i]) ]
-                if ( nowwall & BIT_DIRECTION[i] ) != 0:
-                    # BIT_DIRECTION = [ EAST_BIT, NORTH_BIT, WEST_BIT, SOUTH_BIT ]
-                    # 壁がある場合はその方向に進まないようにする
-                    # ( min関数でindexが選ばれないようにするために255を代入 )
-                    nghbrsDist[i] = 255
-
-            # 歩数が最小の隣接座標を候補にする
-            min_index = [i  for i,x in enumerate(nghbrsDist)  if x==min(nghbrsDist)]
-            candidate = [nghbrs[x]  for x in min_index]
-
-            # 未探索の区画があれば優先して候補にする
-            notSearchedCandidate = [x  for x in candidate  if (self.wallinfo[tuple(x)] & SEARCHED_BIT) == 0]
-            if len(notSearchedCandidate) != 0:
-                candidate = notSearchedCandidate
-
-            # 方向転換が少ない隣接座標を優先する
-            minimumAngle = 180
-            for x in candidate:
-                candidateDirection = calc_next_direcition(x,position,direction)
-                candidateAngle = calc_rotate_angle(candidateDirection,direction)
-                if abs(candidateAngle) <= minimumAngle:
-                    minimumAngle = abs(candidateAngle)
-                    finalCandidate = x
-
-            nextPosition = finalCandidate
-
-        #----- 次方向の算出 -----#
-        nextDirection = calc_next_direcition(nextPosition,position,direction)
-
-        return (nextPosition, nextDirection)
 
     def get_next_pos_direction( self, position, direction, mode):
         nextPosition  = position
@@ -217,20 +174,21 @@ class Maze:
                 nextPosition = finalCandidate
 
             #----- 次方向の算出 -----#
-            nextDirection = calc_next_direcition(nextPosition,virtualPresentPosition,virtualPresentDirection)
+            nextDirectionCandidate = calc_next_direcition(nextPosition,virtualPresentPosition,virtualPresentDirection)
 
-            #----- 再起終了条件 -----#
+            #----- 再帰終了条件 -----#
             if (virtualPresentPosition in common.GOAL_POSITIONS)\
-            or (nextDirection != direction)\
-            or ((self.wallinfo[tuple(virtualPresentPosition)] & SEARCHED_BIT) == 0):
-                # 現在地がゴール or 方向変換なし or 未探索区画の場合
+            or ((self.wallinfo[tuple(virtualPresentPosition)] & SEARCHED_BIT) == 0)\
+            or ((nextDirection != nextDirectionCandidate) and (position != virtualPresentPosition)):
+                # 現在地がゴール or 未探索区画の場合 or 方向変換なし
+                nextPosition  = virtualPresentPosition
+                nextDirection = virtualPresentDirection
                 break
-
-        if virtualPresentPosition != position:
-            nextPosition  = virtualPresentPosition
-            nextDirection = virtualPresentDirection
+            else:
+                nextDirection = nextDirectionCandidate
 
         return (nextPosition, nextDirection)
+
 
     def get_neighbor_pos( self, center ):
         # 引数(center)の上下左右の座標を取得する
@@ -250,38 +208,10 @@ class Maze:
                 neighbors[ i ] = center
                 chk_flag[ i ] = False
         return neighbors, chk_flag
-    def get_nextpos( self, mypos ):
-        # 距離情報を元に、次に進むマスを決める
-        # 探索済のマスがある方向に進まないようになっているので、1回目の走行用
-        # 引数
-        #   mypos : 現在地を表す(x,y)座標のリストもしくはタプル。
-        # 返り値
-        #   nextpos : 次に進むべきマスの(x,y)座標のリスト
-        nextpos = [0,0]
-        nghbrs = self.get_neighbor_pos(mypos)[0]
-        nowwall = self.wallinfo[ tuple(mypos) ]
-        for i in range(4):
-            # ゴールに着いていたらその場に留まる
-            if mypos in common.GOAL_POSITIONS:
-                nextpos = mypos
-                break
-            else:
-                self.n_dist[ i ] = self.distinfo[ tuple(nghbrs[i]) ]    # n_dist = [ 0, 0, 0, 0 ]
-                if (nowwall & BIT_DIRECTION[i]) != 0:  # BIT_DIRECTION = [ EAST_BIT, NORTH_BIT, WEST_BIT, SOUTH_BIT ]
-                    # 壁がある場合はその方向に進まないようにする
-                    # ( min関数でindexが選ばれないようにするために255を代入 )
-                    self.n_dist[i] = 255
-                else:
-                    if nghbrs[i] in common.GOAL_POSITIONS:
-                        nextpos = nghbrs[i]
-                        break
-                # 四方マスのうち、ゴールまでの距離が同じマスがある場合「右->上->左->下」の順に優先的に選択される
-                min_index = self.n_dist.index( min(self.n_dist) )
-                nextpos = nghbrs[min_index]
-        return nextpos
+
 
     #-----------------------------------------------------------------------------#
-    # Set Method                                                                  #
+    # Set Method
     #-----------------------------------------------------------------------------#
     def set_wall_info( self, position, direction, wallInfoFromRcg):
         #----- センサからの壁情報を変換 -----#
@@ -316,6 +246,7 @@ class Maze:
         # print "wallForMaze:", convertedWallInfo
         self.set_wallinfo(position, convertedWallInfo)
 
+
     def set_wallinfo( self, set_pos, new_wallinfo ):
         # 壁情報を更新
         # 引数
@@ -340,64 +271,10 @@ class Maze:
         if ( (wallinfo & SOUTH_BIT) != 0 ) and (chk[3] == True):
             self.wallinfo[ tuple(nghbrs[3]) ] |= NORTH_BIT
 
-    #-----------------------------------------------------------------------------#
-    # Other Method                                                                #
-    #-----------------------------------------------------------------------------#
-    def adachi( self ):
-        # 足立法で各マスの距離情報を取得する
-        step = self.MIN_STEP
-        flag = True
-        # 全区画分の距離情報の初期化
-        self.distinfo = 255 * np.ones( (self.N, self.N), dtype=np.int )
-        for pos in common.GOAL_POSITIONS:
-            self.distinfo[ tuple(pos) ] = self.MIN_STEP
 
-        # ゴール地点からスタート地点までの距離を求めたら処理をやめる
-        while flag == True:
-            # 歩数マップの更新がある限り処理を続ける
-            flag = False
-            for x in range( self.N ):       # xはx座標の値
-                for y in range( self.N ):   # yはy座標の値
-                    if self.distinfo[ (x,y) ] == step:     # (x，y)がゴール直是座標の場合(step = 1)
-                        cntr =(x,y)     # cntrは注目座標
-                        nghbrs = self.get_neighbor_pos(cntr)[ 0 ]     # 東側の隣接座標
-                        # 上下左右マスの歩数マップを更新
-                        for dr in range( len(BIT_DIRECTION) ):    # BIT_DIRECTION = [ EAST_BIT, NORTH_BIT, WEST_BIT, SOUTH_BIT ]
-                            if (self.wallinfo[ tuple(cntr) ] & BIT_DIRECTION[dr] ) == 0:
-                                # 注目座標cntrのdr方向の壁がないとき
-                                if self.distinfo[ tuple(nghbrs[dr]) ] > self.distinfo[ tuple(cntr) ]:
-                                    # dr方向の隣接座標の距離が，注目座標cntrの距離より大きい場合(distinfo is N*N matrix)
-                                    self.distinfo[ tuple(nghbrs[dr]) ] = 1 + self.distinfo[ tuple(cntr) ]
-                                    # dr方向の隣接座標の距離に注目座標cntrの距+1を代入
-                                    flag = True     # 距離更新がなくなるまでwhile loop
-            step += 1
-    def adachi_2nd_run( self ):
-        # 足立法で各マスの距離情報を取得する
-        step = self.MIN_STEP
-        flag = True
-        # 全区画分の距離情報の初期化
-        self.distinfo = 255 * np.ones( (self.N, self.N), dtype=np.int )
-        for pos in common.GOAL_POSITIONS:
-            self.distinfo[ tuple(pos) ] = self.MIN_STEP
-
-        # ゴール地点からスタート地点までの距離を求めたら処理をやめる
-        while flag == True:
-            # 歩数マップの更新がある限り処理を続ける
-            flag = False
-            for x in range( self.N ):
-                for y in range( self.N ):
-                    if self.distinfo[ (x,y) ] == step:
-                        cntr =(x,y)
-                        nghbrs = self.get_neighbor_pos(cntr)[ 0 ]
-                        # 上下左右マスの歩数マップを更新
-                        for dr in range( len(BIT_DIRECTION) ):
-                            if (self.wallinfo[ tuple(cntr) ] & BIT_DIRECTION[dr] ) == 0:
-                                if ( ( self.wallinfo[ tuple(nghbrs[dr]) ] & SEARCHED_BIT ) != 0 )\
-                                and ( self.distinfo[ tuple(nghbrs[dr]) ] > self.distinfo[ tuple(cntr) ] ):
-                                    # dr方向の隣接座標の壁情報が探索済みの場合　かつ　adachiの条件を満たす場合
-                                    self.distinfo[ tuple(nghbrs[dr]) ] = 1 + self.distinfo[ tuple(cntr) ]
-                                    flag = True
-            step += 1
+    #-----------------------------------------------------------------------------#
+    # Other Method
+    #-----------------------------------------------------------------------------#
     def update_dist_info( self, mode ):
         # 足立法で各マスの距離情報を取得する
         step = self.MIN_STEP

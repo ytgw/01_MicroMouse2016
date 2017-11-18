@@ -47,19 +47,19 @@ def main():
 
         #----- デバッグ用表示 -----#
         if presentMode != nextMode:
+            act.reset()
+            act.buzzerWithTime(4186,0.1)
+            global_position  = common.INITIAL_POSITION
+            global_direction = common.INITIAL_DIRECTION
             print "-----------------------------------------------------------------"
             if nextMode == common.INITIAL_MODE:
                 act.led([1,0,0,0])
                 print "Mode changed to INITIAL MODE"
             elif nextMode == common.SEARCH_MODE:
                 act.led([0,1,0,0])
-                global_position  = common.INITIAL_POSITION
-                global_direction = common.INITIAL_DIRECTION
                 print "Mode changed to SEARCH MODE"
             elif nextMode == common.FAST_MODE:
                 act.led([0,0,1,0])
-                global_position  = common.INITIAL_POSITION
-                global_direction = common.INITIAL_DIRECTION
                 print "Mode changed to FAST MODE"
             elif nextMode == common.GOAL_MODE:
                 act.led([0,0,0,1])
@@ -72,10 +72,11 @@ def main():
         if nextMode == common.INITIAL_MODE:
             initialModeFunction()
         elif (nextMode == common.SEARCH_MODE) or (nextMode == common.FAST_MODE):
-            print "---------- START MOVE MODE FUNCTION ----------"
+            print "---------- START OF MOVE MODE FUNCTION ----------"
             # moveModeFunctionは座標移動が完了するまで処理を専有する関数
             moveModeFunction(nextMode)
-            print "END"
+            print "---------- END OF MOVE MODE FUNCTION ----------"
+            print ""
         elif nextMode == common.GOAL_MODE:
             goalModeFunction()
         else:
@@ -110,12 +111,16 @@ def selectMode(presentMode, presentPosition, goalPositions):
             mode = common.FAST_MODE
     elif swState[2] == 0:
         stop.stop()
-        time.sleep(3)
-        swState = rcg.get_switch_state()
-        if swState[2] == 0:
-            act.led([0,0,0,0])
-            act.buzzerWithTime(2093,1)
-            os.system("/sbin/shutdown -h now")
+        if presentMode == common.FAST_MODE:
+            mode = common.GOAL_MODE
+        elif presentMode == common.INITIAL_MODE:
+            time.sleep(3)
+            swState = rcg.get_switch_state()
+            if swState[2] == 0:
+                print "Raspberry Pi will be shut down after 1 sec"
+                act.led([0,0,0,0])
+                act.buzzerWithTime(2093,1)
+                os.system("/sbin/shutdown -h now")
 
     # ゴール到達による遷移
     if (presentMode in [common.SEARCH_MODE, common.FAST_MODE]) \
@@ -149,39 +154,40 @@ def moveModeFunction(mode):
     入力:探索状態or最速走行状態
     '''
     global global_maze, global_position, global_direction, global_onoff
+
     RESIDUAL_DISTANCE = 0.55    # [block]
     ZERO_DISTANCE = 0           # [block]
 
-    if global_position == common.INITIAL_POSITION:
-        global_direction = common.INITIAL_DIRECTION
-        wallInfoFromRcg  = common.INITIAL_WALL_INFO
-        # 1block直進し[0,1]に移動
-        act.startStraight(1)
-        global_position = (0,1)
-
     #----- 区画の境界まで直進 -----#
-    keepStraightUntilThreshold(RESIDUAL_DISTANCE)
+    if global_position != common.INITIAL_POSITION:
+        keepStraightUntilThreshold(RESIDUAL_DISTANCE)
 
 
     #----- 足立法からの情報取得 -----#
-    print "Present",
+    print "Present : ",
     printPositionDirection(global_position, global_direction)
 
     # 壁情報の取得は探索状態のみ
     if mode == common.SEARCH_MODE:
-        wallInfoFromRcg  = rcg.check_wall_info()
+        if global_position == common.INITIAL_POSITION:
+            wallInfoFromRcg = common.INITIAL_WALL_INFO
+        else:
+            wallInfoFromRcg  = rcg.check_wall_info()
         wallForPrint = (wallInfoFromRcg[common.LEFT], wallInfoFromRcg[common.FRONT], wallInfoFromRcg[common.RIGHT])
-        print "Wall Info From Rcg (Left, Front, Right) : ", wallForPrint
+        print "    Wall Info From Rcg (Left, Front, Right) : ", wallForPrint
+        # length = rcg.get_distance()     # 距離センサ情報の取得
+        # print "distance : (L,F,R) = (%.2f, %.2f, %.2f)[m]" % (length[common.LEFT],length[common.FRONT],length[common.RIGHT])
+
         # 壁情報のセット
         global_maze.set_wall_info(global_position, global_direction, wallInfoFromRcg)
         # print "after set wall info"
 
-    # 座標と方向の更新，次行動(回転→直進)の取得
-    (global_position, global_direction, nextAngle, nextDist) \
+    # 次の座標，方向，次行動(回転→直進)の取得
+    (next_position, next_direction, nextAngle, nextDist) \
     = global_maze.get_next_info(global_position, global_direction, mode)
-    print "(Next Angle, Next Distance) : ", (nextAngle, nextDist)
-    print "Next",
-    printPositionDirection(global_position, global_direction)
+    print "    (Next Angle, Next Distance) : ", (nextAngle, nextDist)
+    print "Next    : ",
+    printPositionDirection(next_position, next_direction)
 
     #----- ゴール時と回転時と直進時で動作切り替え -----#
     if nextAngle != 0:
@@ -189,9 +195,13 @@ def moveModeFunction(mode):
         # print "before keepStraightUntilThreshold"
         # keepStraightUntilThresholdで暴走する時がある
         keepStraightUntilThreshold(ZERO_DISTANCE)
+        stop.stop()
+        act.buzzerWithTime(500,0.25)
         # print "after keepStraightUntilThreshold"
         # 回転動作
-        act.rotateUntilLast(nextAngle-5)
+        act.rotateUntilLast(nextAngle)
+        stop.stop()
+        act.buzzerWithTime(500,0.25)
         # print "after act.rotateUntilLast"
         # 直進開始
         act.startStraight(nextDist)
@@ -200,13 +210,25 @@ def moveModeFunction(mode):
         # 直進距離指令に追加
         act.addDistanceOrder(nextDist)
 
-    if global_position in common.GOAL_POSITIONS:
+    if global_position == common.INITIAL_POSITION:
+        initialPositionFunction()
+        act.startStraight(nextDist-0.5)
+    elif next_position in common.GOAL_POSITIONS:
         # 区画中心まで直進
         keepStraightUntilThreshold(ZERO_DISTANCE)
         global_maze.display_distinfo()
         global_maze.display_wallinfo()
         print "You reached goal"
 
+    # 座標と方向の更新
+    global_position = next_position
+    global_direction = next_direction
+
+def initialPositionFunction():
+    BACK_DIST = 11e-2
+    act.back(BACK_DIST)
+    rcg.set_correct_distance()
+    act.rotateUntilLast(180)
 
 def keepStraightUntilThreshold(threshold):
     '''

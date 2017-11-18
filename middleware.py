@@ -43,8 +43,8 @@ def sensorinfo():
             # デバイスドライバから取得できる値は文字列なので数値に変換する
             info = [ int( temp[0] ), int( temp[1] ), int( temp[2] ), int( temp[3] ) ]
     except:
-        # エラー発生時は全ての要素に数値の255を代入する
-        info = [ 255, 255, 255, 255 ]
+        # エラー発生時は全ての要素に-1を代入する
+        info = [ -1, -1, -1, -1 ]
     sensor_info = info
     return sensor_info
 
@@ -123,6 +123,8 @@ def motor( speed ):
     except:
         # エラー発生時は返値としてFalseを返す
         ret = False
+    # if ret == False:
+        # print "output of mw.motor : ", ret
     return ret
 
 def led( led_state ):
